@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الواقع الافتراضي — مركز الرجاء المسيحي</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.6.0/dist/aframe-v1.6.0.min.js"></script>
+  <style>
+    html, body { block-size: 100%; overflow: hidden; }
+    .vr-bar {
+      position: fixed; inset-block-start: 12px; inset-inline: 12px; z-index: 5;
+      display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+      pointer-events: none;
+    }
+    .vr-bar > * { pointer-events: auto; }
+    .vr-bar .chip { background: #FFFFFF; color: #414042; border-radius: 999px; padding: 8px 16px; font-weight: 600; font-size: 15px; }
+    .vr-help {
+      position: fixed; bottom: 12px; left: 12px; z-index: 5; max-inline-size: 360px; cursor: pointer;
+      background: #FFFFFF; color: #414042; border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.6;
+    }
+    .vr-help b { display: block; }
+    /* A-Frame pins its VR/AR buttons to the physical bottom-right, so the help box stays bottom-left. */
+    @media (max-width: 600px) { .vr-help { right: 96px; max-inline-size: none; } }
+  </style>
+</head>
+<body>
+  <div class="vr-bar">
+    <a class="btn" id="back" href="./"></a>
+    <span class="chip" id="name">…</span>
+  </div>
+  <div class="vr-help" id="help" role="button" tabindex="0" title="اضغط للإخفاء" onclick="this.hidden = true" onkeydown="if (event.key === 'Enter' || event.key === ' ') this.hidden = true">
+    <b>كيف تستخدم هذه الصفحة</b>
+    على نظارة <bdi>VR</bdi> (مثل <bdi>Meta Quest</bdi>): اضغط زر <bdi>VR</bdi> للدخول، أو زر <bdi>AR</bdi> لرؤية المجسّم داخل غرفتك. حرّك عصا التحكم اليمنى لتدوير المجسّم، واليسرى لتغيير حجمه.
+    على الموبايل أو الكمبيوتر: اسحب لتنظر حولك.
+  </div>
+
+  <a-scene id="scene" renderer="colorManagement: true; antialias: true"
+    gltf-model="dracoDecoderPath: https://www.gstatic.com/draco/versioned/decoders/1.5.7/"
+    xr-mode-ui="enabled: true; XRMode: xr" loading-screen="dotsColor: #BE1F24; backgroundColor: #E6E7E8">
+    <a-entity light="type: hemisphere; color: #FFFFFF; groundColor: #BCBEC0; intensity: 1.1"></a-entity>
+    <a-entity light="type: directional; intensity: 1.4; castShadow: true" position="2 4 2"></a-entity>
+
+    <a-sky color="#E6E7E8" hide-on-enter-ar></a-sky>
+    <a-plane rotation="-90 0 0" width="40" height="40" color="#BCBEC0" shadow="receive: true" hide-on-enter-ar></a-plane>
+    <a-ring rotation="-90 0 0" position="0 0.002 -2" radius-inner="0.95" radius-outer="1" color="#BE1F24" hide-on-enter-ar></a-ring>
+
+    <a-entity id="holder" position="0 0 -2" stick-controls>
+      <a-entity id="model" shadow="cast: true"></a-entity>
+    </a-entity>
+
+    <a-entity id="rig">
+      <a-entity camera look-controls wasd-controls position="0 1.6 0"></a-entity>
+      <a-entity id="left" hand-controls="hand: left" laser-controls="hand: left"></a-entity>
+      <a-entity id="right" hand-controls="hand: right" laser-controls="hand: right"></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    // Right stick rotates the model, left stick (up/down) scales it.
+    AFRAME.registerComponent('stick-controls', {
+      init() {
+        this.rot = 0; this.scale = 0;
+        const r = document.getElementById('right'), l = document.getElementById('left');
+        r.addEventListener('thumbstickmoved', (e) => { this.rot = Math.abs(e.detail.x) > 0.15 ? e.detail.x : 0; });
+        l.addEventListener('thumbstickmoved', (e) => { this.scale = Math.abs(e.detail.y) > 0.15 ? -e.detail.y : 0; });
+      },
+      tick(t, dt) {
+        if (!dt) return;
+        const o = this.el.object3D;
+        if (this.rot) o.rotation.y -= this.rot * dt * 0.002;
+        if (this.scale) {
+          const s = THREE.MathUtils.clamp(o.scale.x * (1 + this.scale * dt * 0.001), 0.05, 20);
+          o.scale.setScalar(s);
+        }
+      },
+    });
+  </script>
+  <script type="module">
+    import { findModel, param, icons } from './assets/js/catalog.js';
+    const id = param('m');
+    const back = document.getElementById('back');
+    back.innerHTML = icons.back + 'رجوع';
+    const model = id ? await findModel(id).catch(() => null) : null;
+    const name = document.getElementById('name');
+    if (!model) {
+      name.textContent = 'المجسّم غير موجود';
+    } else {
+      document.title = model.title + ' — VR';
+      name.textContent = model.title;
+      back.href = 'view.html?m=' + encodeURIComponent(model.id);
+      const el = document.getElementById('model');
+      el.addEventListener('model-loaded', () => {
+        // Sit the model on the floor, centred on the holder. Real-world scale is kept (1 unit = 1 m).
+        const obj = el.getObject3D('mesh');
+        const box = new THREE.Box3().setFromObject(obj);
+        const c = box.getCenter(new THREE.Vector3());
+        obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
+        obj.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+      });
+      el.addEventListener('model-error', () => { name.textContent = 'تعذّر تحميل الملف'; });
+      el.setAttribute('gltf-model', model.src);
+    }
+  </script>
+</body>
+</html>

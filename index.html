@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>معرض المجسّمات ثلاثية الأبعاد — مركز الرجاء المسيحي</title>
+  <meta name="description" content="اعرض المجسّمات ثلاثية الأبعاد بالواقع المعزّز (AR) والواقع الافتراضي (VR) من الموبايل أو نظارة VR.">
+  <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="./" aria-label="مركز الرجاء المسيحي — الصفحة الرئيسية">
+      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
+      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
+    </a>
+    <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+  </header>
+
+  <main>
+    <h1>معرض المجسّمات ثلاثية الأبعاد</h1>
+    <p class="lead">اختر مجسّماً لتشاهده من كل الزوايا، ثم ضعه في مكانك الحقيقي عبر كاميرا الموبايل (<bdi>AR</bdi>)، أو ادخل إليه بنظارة الواقع الافتراضي (<bdi>VR</bdi>). يمكنك مشاركة رابط أي مجسّم مع الآخرين.</p>
+
+    <div id="gallery" class="grid" aria-live="polite"></div>
+
+    <section class="section" aria-labelledby="try-h">
+      <h2 id="try-h">جرّب ملفاً من جهازك</h2>
+      <p class="lead">اسحب ملف <bdi>GLB</bdi> المُصدَّر من <bdi>Tripo</bdi> أو <bdi>Blender</bdi> هنا لمعاينته فوراً على هذا الجهاز فقط. الملف لا يُرفع إلى أي مكان؛ لنشره للآخرين أضفه إلى مجلد <bdi>models</bdi> (راجع ملف التعليمات).</p>
+      <label class="dropzone" id="drop">
+        <span id="drop-icon"></span>
+        <p><b>اسحب الملف هنا أو اضغط للاختيار</b></p>
+        <small><bdi>.glb</bdi> · <bdi>.gltf</bdi> (ملف واحد مدمج)</small>
+        <input type="file" id="file" class="sr-only" accept=".glb,.gltf,model/gltf-binary,model/gltf+json">
+      </label>
+      <div id="local" class="section" hidden>
+        <div class="stage">
+          <model-viewer id="local-mv" camera-controls touch-action="pan-y" shadow-intensity="1" ar ar-modes="webxr quick-look" alt="معاينة الملف المحلي">
+            <button slot="ar-button" class="btn ar-btn" id="local-ar">عرض في مكانك (<bdi>AR</bdi>)</button>
+          </model-viewer>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">Copyright © 2018 - <span id="y"></span> HOPE CENTER</footer>
+
+  <script type="module">
+    import { loadCatalog, esc, icons } from './assets/js/catalog.js';
+    document.getElementById('y').textContent = new Date().getFullYear();
+    document.getElementById('drop-icon').innerHTML = icons.upload;
+
+    const gallery = document.getElementById('gallery');
+    try {
+      const models = await loadCatalog();
+      if (!models.length) {
+        gallery.innerHTML = '<div class="empty">لا توجد مجسّمات بعد. أضف ملفات <bdi>GLB</bdi> إلى مجلد <bdi>models</bdi> ثم شغّل <bdi>tools/build-catalog.ps1</bdi>.</div>';
+      }
+      gallery.innerHTML = models.map((m) => `
+        <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">
+          <span class="thumb">${m.poster
+            ? `<img src="${esc(m.poster)}" alt="" loading="lazy">`
+            : `<model-viewer src="${esc(m.src)}" loading="lazy" reveal="auto" interaction-prompt="none" disable-zoom disable-pan auto-rotate auto-rotate-delay="0" rotation-per-second="20deg" alt="${esc(m.title)}"></model-viewer>`}</span>
+          <span class="body">
+            <h3>${esc(m.title)}</h3>
+            ${m.description ? `<p>${esc(m.description)}</p>` : ''}
+            ${m.tags?.length ? `<span class="tags">${m.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}
+          </span>
+        </a>`).join('') || gallery.innerHTML;
+    } catch (e) {
+      gallery.innerHTML = '<div class="notice">' + icons.info + '<div>تعذّر تحميل قائمة المجسّمات. افتح الموقع عبر خادم (<bdi>tools/serve.ps1</bdi>) أو بعد نشره، وليس بفتح الملف مباشرة.</div></div>';
+      console.error(e);
+    }
+
+    // Local preview: object URL, never uploaded.
+    const drop = document.getElementById('drop');
+    const input = document.getElementById('file');
+    const local = document.getElementById('local');
+    const mv = document.getElementById('local-mv');
+    let lastUrl;
+    function show(file) {
+      if (!file || !/\.(glb|gltf)$/i.test(file.name)) return;
+      if (lastUrl) URL.revokeObjectURL(lastUrl);
+      lastUrl = URL.createObjectURL(file);
+      mv.src = lastUrl;
+      mv.alt = file.name;
+      local.hidden = false;
+      local.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+    input.addEventListener('change', () => show(input.files[0]));
+    ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
+    drop.addEventListener('drop', (e) => show(e.dataTransfer.files[0]));
+  </script>
+</body>
+</html>

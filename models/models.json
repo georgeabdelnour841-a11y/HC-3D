@@ -1,0 +1,15 @@
+{
+    "models":  [
+                   {
+                       "id":  "sample-astronaut",
+                       "title":  "مثال: رائد فضاء",
+                       "description":  "مجسّم تجريبي لاختبار المنصة. احذفه بعد إضافة مجسّماتك.",
+                       "src":  "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+                       "usdz":  "",
+                       "poster":  "",
+                       "tags":  [
+                                    "مثال"
+                                ]
+                   }
+               ]
+}
