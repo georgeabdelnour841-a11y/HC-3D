@@ -1,5 +1,6 @@
 // Shared helpers: catalog loading (Supabase, or static models.json until configured), auth, icons, share/toast.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { t } from './i18n.js';
 
 export const BUCKET = 'models';
 export const hasBackend = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
@@ -56,12 +57,12 @@ export async function findModel(id) {
   return data ? fromRow(sb, data) : null;
 }
 
-// Header link: "رفع نموذج" when signed in, "تسجيل الدخول" otherwise. Hidden until a backend is configured.
+// Header link: upload when signed in, sign-in otherwise. Hidden until a backend is configured.
 export async function mountAuthLink(el) {
   if (!el || !hasBackend) return;
   const user = await getUser();
   el.href = user ? 'upload.html' : 'login.html';
-  el.innerHTML = user ? icons.upload + 'رفع نموذج' : 'تسجيل الدخول';
+  el.innerHTML = user ? icons.upload + t('auth.upload') : t('auth.login');
   el.hidden = false;
 }
 
@@ -107,8 +108,8 @@ export async function shareLink(title, url) {
   }
   try {
     await navigator.clipboard.writeText(url);
-    toast('تم نسخ الرابط');
+    toast(t('share.copied'));
   } catch {
-    prompt('انسخ الرابط:', url);
+    prompt(t('share.prompt'), url);
   }
 }

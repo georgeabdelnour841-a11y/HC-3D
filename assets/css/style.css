@@ -189,3 +189,8 @@ h2 { font-size: 22px; line-height: 1.4; margin: 0 0 12px; font-weight: 700; }
 .site-footer { border-block-start: 1px solid var(--color-border); padding: 16px var(--gutter); color: var(--color-text-muted); font-size: 14px; text-align: center; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Bilingual: text is swapped in by i18n.js; hide it until then to avoid a flash of the wrong language. */
+.i18n-pending [data-i18n] { visibility: hidden; }
+:root[lang="en"] body { font-size: 16px; line-height: 1.6; }
+.lang-switch { font-weight: 600; }

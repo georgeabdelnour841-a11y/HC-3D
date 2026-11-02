@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-title-key="view.pageTitle">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="assets/js/lang-boot.js"></script>
   <title>عرض المجسّم — مركز الرجاء المسيحي</title>
   <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
@@ -11,18 +12,19 @@
 </head>
 <body>
   <header class="site-header">
-    <a href="./" aria-label="مركز الرجاء المسيحي — الصفحة الرئيسية">
-      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
-      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
+    <a href="./" data-i18n-attr="aria-label:site.home">
+      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="" data-i18n-attr="alt:site.name">
+      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="" data-i18n-attr="alt:site.name">
     </a>
     <div class="header-end">
-      <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+      <p class="title" data-i18n="header.title"></p>
+      <button class="btn btn-outline btn-sm lang-switch" id="lang-switch" type="button"></button>
       <a class="btn btn-outline btn-sm" id="auth-link" hidden></a>
     </div>
   </header>
 
   <main>
-    <a class="back" href="./"><span id="back-icon"></span>كل المجسّمات</a>
+    <a class="back" href="./"><span id="back-icon"></span><span data-i18n="view.back"></span></a>
     <div id="app" class="viewer-layout">
       <div class="stage">
         <model-viewer id="mv" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1"
@@ -33,22 +35,22 @@
 
       <aside class="panel">
         <div>
-          <h1 id="title">…</h1>
-          <p id="desc" class="lead" style="margin:0"></p>
+          <h1 id="title" dir="auto">…</h1>
+          <p id="desc" class="lead" dir="auto" style="margin:0"></p>
         </div>
 
         <div>
-          <h2 style="font-size:16px;margin-bottom:6px">الأبعاد الحقيقية</h2>
+          <h2 style="font-size:16px;margin-bottom:6px" data-i18n="view.dims"></h2>
           <div class="dims" aria-live="polite">
-            <div><b id="dw">—</b><span>العرض</span></div>
-            <div><b id="dh">—</b><span>الارتفاع</span></div>
-            <div><b id="dd">—</b><span>العمق</span></div>
+            <div><b id="dw">—</b><span data-i18n="dim.w"></span></div>
+            <div><b id="dh">—</b><span data-i18n="dim.h"></span></div>
+            <div><b id="dd">—</b><span data-i18n="dim.d"></span></div>
           </div>
         </div>
 
         <label style="display:flex;gap:10px;align-items:center;min-block-size:44px;cursor:pointer">
           <input type="checkbox" id="fixed" style="inline-size:20px;block-size:20px">
-          <span>تثبيت الحجم الحقيقي في <bdi>AR</bdi> (منع التكبير والتصغير)</span>
+          <span data-i18n="view.fixed"></span>
         </label>
 
         <div class="btn-row">
@@ -60,7 +62,7 @@
 
         <div class="qr-box">
           <div id="qr" aria-hidden="true"></div>
-          <p>امسح الرمز بكاميرا الموبايل لفتح هذا المجسّم على هاتفك ووضعه في مكانك الحقيقي.</p>
+          <p data-i18n="view.qr"></p>
         </div>
       </aside>
     </div>
@@ -70,6 +72,7 @@
 
   <script type="module">
     import { findModel, param, siteUrl, esc, icons, shareLink, mountAuthLink } from './assets/js/catalog.js';
+    import { t, setTitle, formatLength } from './assets/js/i18n.js';
     mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('back-icon').innerHTML = icons.back;
@@ -79,10 +82,10 @@
     const app = document.getElementById('app');
 
     if (!model) {
-      app.innerHTML = '<div class="notice">' + icons.info + '<div>هذا المجسّم غير موجود أو تم حذفه. <a href="./">العودة إلى المعرض</a></div></div>';
+      app.innerHTML = '<div class="notice">' + icons.info + '<div>' + t('view.notFound') + '</div></div>';
     } else {
       const mv = document.getElementById('mv');
-      document.title = model.title + ' — مركز الرجاء المسيحي';
+      setTitle(model.title, true);
       document.getElementById('title').textContent = model.title;
       document.getElementById('desc').textContent = model.description || '';
       mv.alt = model.title;
@@ -90,12 +93,12 @@
       if (model.poster) mv.poster = model.poster;
       mv.src = model.src;
 
-      document.getElementById('ar-btn').innerHTML = icons.ar + 'ضعه في مكانك (<bdi>AR</bdi>)';
+      document.getElementById('ar-btn').innerHTML = icons.ar + t('ar.place');
       const vr = document.getElementById('vr-btn');
       vr.href = 'vr.html?m=' + encodeURIComponent(model.id);
-      vr.innerHTML = icons.vr + 'الواقع الافتراضي (<bdi>VR</bdi>)';
+      vr.innerHTML = icons.vr + t('vr.enter');
       const share = document.getElementById('share-btn');
-      share.innerHTML = icons.share + 'مشاركة الرابط';
+      share.innerHTML = icons.share + t('share.btn');
       const pageUrl = siteUrl('view.html?m=' + encodeURIComponent(model.id));
       share.addEventListener('click', () => shareLink(model.title, pageUrl));
 
@@ -105,20 +108,19 @@
         mv.setAttribute('ar-scale', e.target.checked ? 'fixed' : 'auto');
       });
 
-      const fmt = (m) => m >= 1 ? m.toFixed(2) + ' م' : Math.round(m * 100) + ' سم';
       mv.addEventListener('load', () => {
         const d = mv.getDimensions();
-        document.getElementById('dw').textContent = fmt(d.x);
-        document.getElementById('dh').textContent = fmt(d.y);
-        document.getElementById('dd').textContent = fmt(d.z);
+        document.getElementById('dw').textContent = formatLength(d.x);
+        document.getElementById('dh').textContent = formatLength(d.y);
+        document.getElementById('dd').textContent = formatLength(d.z);
         if (!mv.canActivateAR) {
           const hint = document.getElementById('ar-hint');
-          hint.innerHTML = icons.info + '<div>هذا الجهاز لا يدعم الواقع المعزّز. افتح الرابط من موبايل (<bdi>Android</bdi> مع <bdi>ARCore</bdi> أو <bdi>iPhone</bdi>) عبر رمز <bdi>QR</bdi> أدناه.</div>';
+          hint.innerHTML = icons.info + '<div>' + t('view.noAR') + '</div>';
           hint.hidden = false;
         }
       });
       mv.addEventListener('error', () => {
-        app.querySelector('.stage').insertAdjacentHTML('beforeend', '<div class="notice" style="position:absolute;inset:16px;background:var(--color-bg)">' + icons.info + '<div>تعذّر تحميل ملف المجسّم: <bdi>' + esc(model.src) + '</bdi></div></div>');
+        app.querySelector('.stage').insertAdjacentHTML('beforeend', '<div class="notice" style="position:absolute;inset:16px;background:var(--color-bg)">' + icons.info + '<div>' + t('view.loadError') + ' <bdi>' + esc(model.src) + '</bdi></div></div>');
       });
     }
   </script>

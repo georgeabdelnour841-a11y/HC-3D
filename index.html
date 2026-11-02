@@ -1,45 +1,47 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-title-key="index.pageTitle">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="assets/js/lang-boot.js"></script>
   <title>معرض المجسّمات ثلاثية الأبعاد — مركز الرجاء المسيحي</title>
-  <meta name="description" content="اعرض المجسّمات ثلاثية الأبعاد بالواقع المعزّز (AR) والواقع الافتراضي (VR) من الموبايل أو نظارة VR.">
+  <meta name="description" content="اعرض المجسّمات ثلاثية الأبعاد بالواقع المعزّز (AR) والواقع الافتراضي (VR) من الموبايل أو نظارة VR." data-i18n-attr="content:index.description">
   <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
   <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
   <header class="site-header">
-    <a href="./" aria-label="مركز الرجاء المسيحي — الصفحة الرئيسية">
-      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
-      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
+    <a href="./" data-i18n-attr="aria-label:site.home">
+      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="" data-i18n-attr="alt:site.name">
+      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="" data-i18n-attr="alt:site.name">
     </a>
     <div class="header-end">
-      <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+      <p class="title" data-i18n="header.title"></p>
+      <button class="btn btn-outline btn-sm lang-switch" id="lang-switch" type="button"></button>
       <a class="btn btn-outline btn-sm" id="auth-link" hidden></a>
     </div>
   </header>
 
   <main>
-    <h1>معرض المجسّمات ثلاثية الأبعاد</h1>
-    <p class="lead">اختر مجسّماً لتشاهده من كل الزوايا، ثم ضعه في مكانك الحقيقي عبر كاميرا الموبايل (<bdi>AR</bdi>)، أو ادخل إليه بنظارة الواقع الافتراضي (<bdi>VR</bdi>). يمكنك مشاركة رابط أي مجسّم مع الآخرين.</p>
+    <h1 data-i18n="index.h1"></h1>
+    <p class="lead" data-i18n="index.lead"></p>
 
     <div id="gallery" class="grid" aria-live="polite"></div>
 
     <section class="section" aria-labelledby="try-h">
-      <h2 id="try-h">جرّب ملفاً من جهازك</h2>
-      <p class="lead">اسحب ملف <bdi>GLB</bdi> المُصدَّر من <bdi>Tripo</bdi> أو <bdi>Blender</bdi> هنا لمعاينته فوراً على هذا الجهاز فقط. الملف لا يُرفع إلى أي مكان؛ لنشره للآخرين سجّل الدخول واستخدم صفحة «رفع نموذج».</p>
+      <h2 id="try-h" data-i18n="index.tryH"></h2>
+      <p class="lead" data-i18n="index.tryLead"></p>
       <label class="dropzone" id="drop">
         <span id="drop-icon"></span>
-        <p><b>اسحب الملف هنا أو اضغط للاختيار</b></p>
-        <small><bdi>.glb</bdi> · <bdi>.gltf</bdi> (ملف واحد مدمج)</small>
+        <p><b data-i18n="index.dropMain"></b></p>
+        <small data-i18n="index.dropHint"></small>
         <input type="file" id="file" class="sr-only" accept=".glb,.gltf,model/gltf-binary,model/gltf+json">
       </label>
       <div id="local" class="section" hidden>
         <div class="stage">
-          <model-viewer id="local-mv" camera-controls touch-action="pan-y" shadow-intensity="1" ar ar-modes="webxr quick-look" alt="معاينة الملف المحلي">
-            <button slot="ar-button" class="btn ar-btn" id="local-ar">عرض في مكانك (<bdi>AR</bdi>)</button>
+          <model-viewer id="local-mv" camera-controls touch-action="pan-y" shadow-intensity="1" ar ar-modes="webxr quick-look" data-i18n-attr="alt:index.localAlt">
+            <button slot="ar-button" class="btn ar-btn" id="local-ar" data-i18n="ar.short"></button>
           </model-viewer>
         </div>
       </div>
@@ -50,6 +52,7 @@
 
   <script type="module">
     import { loadCatalog, esc, icons, mountAuthLink, hasBackend } from './assets/js/catalog.js';
+    import { t } from './assets/js/i18n.js';
     mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('drop-icon').innerHTML = icons.upload;
@@ -57,24 +60,21 @@
     const gallery = document.getElementById('gallery');
     try {
       const models = await loadCatalog();
-      if (!models.length) {
-        gallery.innerHTML = hasBackend
-          ? '<div class="empty">لا توجد مجسّمات بعد. سجّل الدخول ثم اضغط «رفع نموذج».</div>'
-          : '<div class="empty">لا توجد مجسّمات بعد. أضف ملفات <bdi>GLB</bdi> إلى مجلد <bdi>models</bdi> ثم شغّل <bdi>tools/build-catalog.ps1</bdi>.</div>';
-      }
-      gallery.innerHTML = models.map((m) => `
+      gallery.innerHTML = models.length
+        ? models.map((m) => `
         <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">
           <span class="thumb">${m.poster
             ? `<img src="${esc(m.poster)}" alt="" loading="lazy">`
             : `<model-viewer src="${esc(m.src)}" loading="lazy" reveal="auto" interaction-prompt="none" disable-zoom disable-pan auto-rotate auto-rotate-delay="0" rotation-per-second="20deg" alt="${esc(m.title)}"></model-viewer>`}</span>
           <span class="body">
-            <h3>${esc(m.title)}</h3>
-            ${m.description ? `<p>${esc(m.description)}</p>` : ''}
-            ${m.tags?.length ? `<span class="tags">${m.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}
+            <h3 dir="auto">${esc(m.title)}</h3>
+            ${m.description ? `<p dir="auto">${esc(m.description)}</p>` : ''}
+            ${m.tags?.length ? `<span class="tags">${m.tags.map((tag) => `<span class="tag" dir="auto">${esc(tag)}</span>`).join('')}</span>` : ''}
           </span>
-        </a>`).join('') || gallery.innerHTML;
+        </a>`).join('')
+        : '<div class="empty">' + t(hasBackend ? 'index.emptyBackend' : 'index.emptyStatic') + '</div>';
     } catch (e) {
-      gallery.innerHTML = '<div class="notice">' + icons.info + '<div>تعذّر تحميل قائمة المجسّمات. افتح الموقع عبر خادم (<bdi>tools/serve.ps1</bdi>) أو بعد نشره، وليس بفتح الملف مباشرة.</div></div>';
+      gallery.innerHTML = '<div class="notice">' + icons.info + '<div>' + t('index.loadError') + '</div></div>';
       console.error(e);
     }
 
@@ -94,8 +94,8 @@
       local.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
     input.addEventListener('change', () => show(input.files[0]));
-    ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
-    ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
+    ['dragenter', 'dragover'].forEach((type) => drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach((type) => drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
     drop.addEventListener('drop', (e) => show(e.dataTransfer.files[0]));
   </script>
 </body>

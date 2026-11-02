@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-title-key="vr.pageTitle">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="assets/js/lang-boot.js"></script>
   <title>الواقع الافتراضي — مركز الرجاء المسيحي</title>
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.6.0/dist/aframe-v1.6.0.min.js"></script>
@@ -29,11 +30,7 @@
     <a class="btn" id="back" href="./"></a>
     <span class="chip" id="name">…</span>
   </div>
-  <div class="vr-help" id="help" role="button" tabindex="0" title="اضغط للإخفاء" onclick="this.hidden = true" onkeydown="if (event.key === 'Enter' || event.key === ' ') this.hidden = true">
-    <b>كيف تستخدم هذه الصفحة</b>
-    على نظارة <bdi>VR</bdi> (مثل <bdi>Meta Quest</bdi>): اضغط زر <bdi>VR</bdi> للدخول، أو زر <bdi>AR</bdi> لرؤية المجسّم داخل غرفتك. حرّك عصا التحكم اليمنى لتدوير المجسّم، واليسرى لتغيير حجمه.
-    على الموبايل أو الكمبيوتر: اسحب لتنظر حولك.
-  </div>
+  <div class="vr-help" id="help" role="button" tabindex="0" data-i18n="vr.help" data-i18n-attr="title:vr.dismiss" onclick="this.hidden = true" onkeydown="if (event.key === 'Enter' || event.key === ' ') this.hidden = true"></div>
 
   <a-scene id="scene" renderer="colorManagement: true; antialias: true"
     gltf-model="dracoDecoderPath: https://www.gstatic.com/draco/versioned/decoders/1.5.7/"
@@ -78,15 +75,17 @@
   </script>
   <script type="module">
     import { findModel, param, icons } from './assets/js/catalog.js';
+    import { t } from './assets/js/i18n.js';
     const id = param('m');
     const back = document.getElementById('back');
-    back.innerHTML = icons.back + 'رجوع';
+    back.innerHTML = icons.back + t('vr.back');
     const model = id ? await findModel(id).catch(() => null) : null;
     const name = document.getElementById('name');
     if (!model) {
-      name.textContent = 'المجسّم غير موجود';
+      name.textContent = t('vr.notFound');
     } else {
       document.title = model.title + ' — VR';
+      name.dir = 'auto';
       name.textContent = model.title;
       back.href = 'view.html?m=' + encodeURIComponent(model.id);
       const el = document.getElementById('model');
@@ -98,7 +97,7 @@
         obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
         obj.traverse((n) => { if (n.isMesh) n.castShadow = true; });
       });
-      el.addEventListener('model-error', () => { name.textContent = 'تعذّر تحميل الملف'; });
+      el.addEventListener('model-error', () => { name.textContent = t('vr.loadError'); });
       el.setAttribute('gltf-model', model.src);
     }
   </script>

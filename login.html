@@ -1,52 +1,56 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-title-key="login.pageTitle">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="assets/js/lang-boot.js"></script>
   <title>تسجيل الدخول — مركز الرجاء المسيحي</title>
   <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <header class="site-header">
-    <a href="./" aria-label="مركز الرجاء المسيحي — الصفحة الرئيسية">
-      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
-      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
+    <a href="./" data-i18n-attr="aria-label:site.home">
+      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="" data-i18n-attr="alt:site.name">
+      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="" data-i18n-attr="alt:site.name">
     </a>
-    <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+    <div class="header-end">
+      <p class="title" data-i18n="header.title"></p>
+      <button class="btn btn-outline btn-sm lang-switch" id="lang-switch" type="button"></button>
+    </div>
   </header>
 
   <main class="narrow">
     <!-- Sign in -->
     <form id="login" class="form" hidden>
-      <h1>تسجيل الدخول</h1>
-      <p class="lead">لرفع النماذج وإدارتها. الحسابات بدعوة فقط — اطلب دعوة من مسؤول المنصة.</p>
+      <h1 data-i18n="login.h1"></h1>
+      <p class="lead" data-i18n="login.lead"></p>
       <div class="field">
-        <label for="email">البريد الإلكتروني</label>
+        <label for="email" data-i18n="login.email"></label>
         <input id="email" type="email" autocomplete="email" dir="ltr" required>
       </div>
       <div class="field">
-        <label for="password">كلمة المرور</label>
+        <label for="password" data-i18n="login.password"></label>
         <input id="password" type="password" autocomplete="current-password" dir="ltr" required>
       </div>
       <p class="error" id="login-error" role="alert" hidden></p>
       <div class="btn-row">
-        <button class="btn" type="submit">دخول</button>
-        <button class="btn btn-outline" type="button" id="forgot">نسيت كلمة المرور</button>
+        <button class="btn" type="submit" data-i18n="login.submit"></button>
+        <button class="btn btn-outline" type="button" id="forgot" data-i18n="login.forgot"></button>
       </div>
     </form>
 
     <!-- Set password: after an invite or a reset link -->
     <form id="set-password" class="form" hidden>
-      <h1 id="sp-title">اختر كلمة المرور</h1>
-      <p class="lead">ستستخدمها مع بريدك لتسجيل الدخول لاحقاً.</p>
+      <h1 id="sp-title" data-i18n="login.setTitle"></h1>
+      <p class="lead" data-i18n="login.setLead"></p>
       <div class="field">
-        <label for="new-password">كلمة المرور الجديدة</label>
+        <label for="new-password" data-i18n="login.newPassword"></label>
         <input id="new-password" type="password" autocomplete="new-password" dir="ltr" minlength="8" required>
-        <small>8 أحرف على الأقل.</small>
+        <small data-i18n="login.minLength"></small>
       </div>
       <p class="error" id="sp-error" role="alert" hidden></p>
-      <button class="btn" type="submit">حفظ والمتابعة</button>
+      <button class="btn" type="submit" data-i18n="login.save"></button>
     </form>
 
     <div id="not-configured" class="notice" hidden></div>
@@ -54,6 +58,7 @@
 
   <script type="module">
     import { getClient, hasBackend, icons, toast } from './assets/js/catalog.js';
+    import { t } from './assets/js/i18n.js';
 
     // Read the link type before supabase-js consumes the URL hash.
     const hash = new URLSearchParams(location.hash.slice(1));
@@ -68,21 +73,21 @@
 
     if (!hasBackend) {
       const nc = document.getElementById('not-configured');
-      nc.innerHTML = icons.info + '<div>تسجيل الدخول غير مفعّل بعد: أضف بيانات مشروع <bdi>Supabase</bdi> في <bdi>assets/js/config.js</bdi>.</div>';
+      nc.innerHTML = icons.info + '<div>' + t('login.notConfigured') + '</div>';
       nc.hidden = false;
     } else {
       const sb = await getClient();
       const { data: { session } } = await sb.auth.getSession();
 
       if (linkType === 'invite' || linkType === 'recovery') {
-        if (linkType === 'recovery') document.getElementById('sp-title').textContent = 'كلمة مرور جديدة';
+        if (linkType === 'recovery') document.getElementById('sp-title').textContent = t('login.resetTitle');
         setPw.hidden = false;
-        if (!session) showError(document.getElementById('sp-error'), 'انتهت صلاحية الرابط أو استُخدم من قبل. اطلب رابطاً جديداً.');
+        if (!session) showError(document.getElementById('sp-error'), t('login.linkExpired'));
       } else if (session) {
         go();
       } else {
         login.hidden = false;
-        if (linkError) showError(document.getElementById('login-error'), 'الرابط غير صالح أو منتهي الصلاحية.');
+        if (linkError) showError(document.getElementById('login-error'), t('login.linkInvalid'));
       }
 
       login.addEventListener('submit', async (e) => {
@@ -94,24 +99,24 @@
           password: document.getElementById('password').value,
         });
         btn.disabled = false;
-        if (error) return showError(document.getElementById('login-error'), 'البريد أو كلمة المرور غير صحيحة.');
+        if (error) return showError(document.getElementById('login-error'), t('login.badCredentials'));
         go();
       });
 
       document.getElementById('forgot').addEventListener('click', async () => {
         const email = document.getElementById('email').value.trim();
         const err = document.getElementById('login-error');
-        if (!email) return showError(err, 'اكتب بريدك الإلكتروني أولاً.');
+        if (!email) return showError(err, t('login.emailFirst'));
         const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('login.html', location.href).href });
-        if (error) return showError(err, 'تعذّر الإرسال، حاول بعد قليل.');
+        if (error) return showError(err, t('login.sendFailed'));
         err.hidden = true;
-        toast('أرسلنا رابط إعادة التعيين إلى بريدك');
+        toast(t('login.resetSent'));
       });
 
       setPw.addEventListener('submit', async (e) => {
         e.preventDefault();
         const { error } = await sb.auth.updateUser({ password: document.getElementById('new-password').value });
-        if (error) return showError(document.getElementById('sp-error'), 'تعذّر حفظ كلمة المرور: ' + error.message);
+        if (error) return showError(document.getElementById('sp-error'), t('login.saveFailed') + ' ' + error.message);
         history.replaceState(null, '', location.pathname);
         go();
       });
