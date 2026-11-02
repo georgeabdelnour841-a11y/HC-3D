@@ -81,7 +81,8 @@
     </section>
 
     <!-- Gallery -->
-    <section class="section" aria-labelledby="all-h">
+    <!-- Team-only (signed in): the full gallery and the local preview tool. -->
+    <section class="section" id="gallery-section" aria-labelledby="all-h" hidden>
       <div class="section-head">
         <h2 id="all-h" data-i18n="index.allH"></h2>
         <span class="count" id="count"></span>
@@ -93,8 +94,7 @@
       </div>
     </section>
 
-    <!-- Designer tool, kept out of the way of visitors -->
-    <details class="section tool">
+    <details class="section tool" id="tool-section" hidden>
       <summary data-i18n="index.tryH"></summary>
       <p class="lead" data-i18n="index.tryLead"></p>
       <label class="dropzone" id="drop">
@@ -126,7 +126,7 @@
   </footer>
 
   <script type="module">
-    import { loadCatalog, demoModel, esc, icons, mountAuthLink, siteUrl } from './assets/js/catalog.js';
+    import { loadCatalog, findModel, demoModel, getUser, esc, icons, mountAuthLink, siteUrl } from './assets/js/catalog.js';
     import { t, formatLength } from './assets/js/i18n.js';
     import { FEATURED_MODEL_ID } from './assets/js/config.js';
     mountAuthLink(document.getElementById('auth-link'));
@@ -191,29 +191,41 @@
         </a>`;
     }
 
-    // With nothing published (or the database unreachable) the built-in demo fills the hero and the gallery.
-    function useDemo(note) {
+    // With nothing to feature (or the database unreachable) the built-in demo fills the hero.
+    function showDemo() {
       showFeatured(demoModel());
       $('hero-eyebrow').innerHTML = t('demo.tag');
-      gallery.innerHTML = card(demoModel()) + '<div class="empty demo-note">' + note + '</div>';
     }
 
     const gallery = $('gallery');
-    try {
-      const models = await loadCatalog();
-      const featured = models.find((m) => m.id === FEATURED_MODEL_ID) || models[0];
-      if (featured) {
-        showFeatured(featured);
-        $('count').textContent = t('index.count', { n: models.length });
-        gallery.innerHTML = models.map(card).join('');
-      } else {
-        useDemo(t('index.emptyDemo'));
+    const user = await getUser().catch(() => null);
+
+    if (!user) {
+      // Visitors: only the featured model (set in config.js) or the demo. No browsing list, no file tool.
+      const featured = FEATURED_MODEL_ID ? await findModel(FEATURED_MODEL_ID).catch(() => null) : null;
+      if (featured) showFeatured(featured); else showDemo();
+    } else {
+      // Signed-in team members: full gallery plus the local preview tool.
+      $('gallery-section').hidden = false;
+      $('tool-section').hidden = false;
+      try {
+        const models = await loadCatalog();
+        const featured = models.find((m) => m.id === FEATURED_MODEL_ID) || models[0];
+        if (featured) {
+          showFeatured(featured);
+          $('count').textContent = t('index.count', { n: models.length });
+          gallery.innerHTML = models.map(card).join('');
+        } else {
+          showDemo();
+          gallery.innerHTML = '<div class="empty">' + t('index.emptyBackend') + '</div>';
+        }
+      } catch (e) {
+        console.error(e);
+        showDemo();
+        gallery.innerHTML = '<div class="notice">' + icons.info + '<div>' + t('index.loadError') + '</div></div>';
       }
-    } catch (e) {
-      console.error(e);
-      useDemo(icons.info + ' ' + t('index.loadError'));
+      gallery.setAttribute('aria-busy', 'false');
     }
-    gallery.setAttribute('aria-busy', 'false');
 
     // Local preview: object URL, never uploaded.
     const drop = $('drop');

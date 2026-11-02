@@ -94,7 +94,7 @@
   </footer>
 
   <script type="module">
-    import { findModel, loadCatalog, param, siteUrl, esc, icons, shareLink, mountAuthLink } from './assets/js/catalog.js';
+    import { findModel, loadCatalog, getUser, param, siteUrl, esc, icons, shareLink, mountAuthLink } from './assets/js/catalog.js';
     import { t, setTitle, formatLength } from './assets/js/i18n.js';
     mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
@@ -168,8 +168,8 @@
         app.querySelector('.stage').insertAdjacentHTML('beforeend', '<div class="notice" style="position:absolute;inset:16px;background:var(--color-bg)">' + icons.info + '<div>' + t('view.loadError') + ' <bdi>' + esc(model.src) + '</bdi></div></div>');
       });
 
-      // Other models, to keep visitors exploring.
-      loadCatalog().then((all) => {
+      // Other models: for signed-in team members only (visitors get no browsing list).
+      getUser().then((user) => (user ? loadCatalog() : [])).then((all) => {
         const others = all.filter((m) => m.id !== model.id).slice(0, 3);
         if (!others.length) return;
         $('more-grid').innerHTML = others.map((m) => `
