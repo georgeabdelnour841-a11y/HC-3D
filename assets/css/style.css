@@ -103,13 +103,29 @@ h2 { font-size: 22px; line-height: 1.4; margin: 0 0 12px; font-weight: 700; }
 .notice { border-style: solid; display: flex; gap: 12px; align-items: flex-start; }
 .notice svg { inline-size: 22px; block-size: 22px; flex: none; margin-block-start: 3px; }
 
+/* Home hero: featured model */
+.hero {
+  display: grid; gap: 24px; align-items: center; grid-template-columns: 1fr;
+  margin-block-end: 40px;
+}
+@media (min-width: 900px) { .hero { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+.hero .lead { margin-block-end: 16px; }
+.hero-stage { block-size: min(60vh, 520px); min-block-size: 320px; }
+.eyebrow { display: inline-block; font-size: 14px; font-weight: 600; color: var(--color-text-muted); margin-block-end: 4px; }
+.hero-model { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+.hero-actions { margin-block-start: 16px; }
+
 /* Dropzone */
 .section { margin-block-start: 40px; }
+/* It is a <label> (inline by default), so it needs an explicit block box. */
 .dropzone {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
   border: 2px dashed var(--color-border); border-radius: var(--radius);
   padding: 28px 20px; text-align: center; cursor: pointer; transition: background 150ms ease;
 }
-.dropzone.is-over { background: var(--color-surface); }
+.dropzone.is-over, .dropzone:hover { background: var(--color-surface); }
+.dropzone:focus-within { outline: 2px solid var(--focus-outer); outline-offset: 2px; }
+.dropzone #drop-icon { display: block; line-height: 0; }
 .dropzone svg { inline-size: 36px; block-size: 36px; color: var(--color-text-muted); }
 .dropzone p { margin: 8px 0 0; }
 .dropzone small { color: var(--color-text-muted); }

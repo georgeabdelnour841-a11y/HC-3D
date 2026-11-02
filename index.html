@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" content="notranslate">
   <script src="assets/js/lang-boot.js"></script>
   <title>معرض المجسّمات ثلاثية الأبعاد — مركز الرجاء المسيحي</title>
   <meta name="description" content="اعرض المجسّمات ثلاثية الأبعاد بالواقع المعزّز (AR) والواقع الافتراضي (VR) من الموبايل أو نظارة VR." data-i18n-attr="content:index.description">
@@ -24,10 +25,30 @@
   </header>
 
   <main>
-    <h1 data-i18n="index.h1"></h1>
-    <p class="lead" data-i18n="index.lead"></p>
+    <section class="hero">
+      <div>
+        <h1 data-i18n="index.h1"></h1>
+        <p class="lead" data-i18n="index.lead"></p>
+        <div id="hero-info" hidden>
+          <span class="eyebrow" data-i18n="index.featured"></span>
+          <p class="hero-model" id="hero-title" dir="auto"></p>
+          <div class="btn-row hero-actions">
+            <a class="btn btn-outline" id="hero-vr"></a>
+            <a class="btn btn-outline" id="hero-details"></a>
+          </div>
+        </div>
+      </div>
+      <div class="stage hero-stage" id="hero-stage" hidden>
+        <model-viewer id="hero-mv" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1"
+          auto-rotate auto-rotate-delay="1500" rotation-per-second="18deg" interaction-prompt="none"
+          ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" alt="">
+          <button slot="ar-button" class="btn ar-btn" id="hero-ar"></button>
+        </model-viewer>
+      </div>
+    </section>
 
-    <div id="gallery" class="grid" aria-live="polite"></div>
+    <h2 id="all-h" data-i18n="index.allH"></h2>
+    <div id="gallery" class="grid" aria-live="polite" aria-labelledby="all-h"></div>
 
     <section class="section" aria-labelledby="try-h">
       <h2 id="try-h" data-i18n="index.tryH"></h2>
@@ -53,13 +74,35 @@
   <script type="module">
     import { loadCatalog, esc, icons, mountAuthLink, hasBackend } from './assets/js/catalog.js';
     import { t } from './assets/js/i18n.js';
+    import { FEATURED_MODEL_ID } from './assets/js/config.js';
     mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('drop-icon').innerHTML = icons.upload;
 
+    // Hero: the configured featured model, or the newest one. The poster shows at once while the GLB loads.
+    function showFeatured(m) {
+      const mv = document.getElementById('hero-mv');
+      if (m.poster) mv.poster = m.poster;
+      if (m.usdz) mv.setAttribute('ios-src', m.usdz);
+      mv.alt = m.title;
+      mv.src = m.src;
+      document.getElementById('hero-title').textContent = m.title;
+      document.getElementById('hero-ar').innerHTML = icons.ar + t('ar.place');
+      const vr = document.getElementById('hero-vr');
+      vr.href = 'vr.html?m=' + encodeURIComponent(m.id);
+      vr.innerHTML = icons.vr + t('vr.enter');
+      const details = document.getElementById('hero-details');
+      details.href = 'view.html?m=' + encodeURIComponent(m.id);
+      details.innerHTML = icons.share + t('index.details');
+      document.getElementById('hero-info').hidden = false;
+      document.getElementById('hero-stage').hidden = false;
+    }
+
     const gallery = document.getElementById('gallery');
     try {
       const models = await loadCatalog();
+      const featured = models.find((m) => m.id === FEATURED_MODEL_ID) || models[0];
+      if (featured) showFeatured(featured);
       gallery.innerHTML = models.length
         ? models.map((m) => `
         <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">
