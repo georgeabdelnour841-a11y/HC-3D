@@ -1,6 +1,7 @@
 -- Run once in Supabase → SQL Editor → New query → Run.
--- Viewing is public; only signed-in (invited) users can upload, and each user
--- can edit or delete only their own models.
+-- Visitors can open a single model by its id (share links) but cannot list
+-- models; signed-in (invited) users can list and upload, and each user can
+-- edit or delete only their own models.
 
 create table if not exists public.models (
   id          uuid primary key default gen_random_uuid(),
@@ -19,9 +20,20 @@ create table if not exists public.models (
 
 alter table public.models enable row level security;
 
+-- Listing is for the signed-in team only.
 drop policy if exists "models are public" on public.models;
-create policy "models are public" on public.models
-  for select to anon, authenticated using (true);
+drop policy if exists "team reads models" on public.models;
+create policy "team reads models" on public.models
+  for select to authenticated using (true);
+
+-- Share links: anyone can fetch exactly one model, and only if they know its id.
+create or replace function public.get_model(model_id uuid)
+returns setof public.models
+language sql stable security definer
+set search_path = public
+as $$ select * from public.models where id = model_id $$;
+revoke all on function public.get_model(uuid) from public;
+grant execute on function public.get_model(uuid) to anon, authenticated;
 
 drop policy if exists "users add own models" on public.models;
 create policy "users add own models" on public.models

@@ -64,9 +64,10 @@ export async function findModel(id) {
   const sb = await getClient();
   if (!sb) return (await loadStatic()).find((m) => m.id === id) || null;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const { data, error } = await sb.from('models').select('*').eq('id', id).maybeSingle();
+  // Visitors can't read the table directly (no listing), so single models come through get_model().
+  const { data, error } = await sb.rpc('get_model', { model_id: id });
   if (error) throw error;
-  return data ? fromRow(sb, data) : null;
+  return data?.[0] ? fromRow(sb, data[0]) : null;
 }
 
 // Header link: upload when signed in, sign-in otherwise. Hidden until a backend is configured.
