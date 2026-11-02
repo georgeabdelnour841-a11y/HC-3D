@@ -15,7 +15,10 @@
       <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
       <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
     </a>
-    <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+    <div class="header-end">
+      <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+      <a class="btn btn-outline btn-sm" id="auth-link" hidden></a>
+    </div>
   </header>
 
   <main>
@@ -26,7 +29,7 @@
 
     <section class="section" aria-labelledby="try-h">
       <h2 id="try-h">جرّب ملفاً من جهازك</h2>
-      <p class="lead">اسحب ملف <bdi>GLB</bdi> المُصدَّر من <bdi>Tripo</bdi> أو <bdi>Blender</bdi> هنا لمعاينته فوراً على هذا الجهاز فقط. الملف لا يُرفع إلى أي مكان؛ لنشره للآخرين أضفه إلى مجلد <bdi>models</bdi> (راجع ملف التعليمات).</p>
+      <p class="lead">اسحب ملف <bdi>GLB</bdi> المُصدَّر من <bdi>Tripo</bdi> أو <bdi>Blender</bdi> هنا لمعاينته فوراً على هذا الجهاز فقط. الملف لا يُرفع إلى أي مكان؛ لنشره للآخرين سجّل الدخول واستخدم صفحة «رفع نموذج».</p>
       <label class="dropzone" id="drop">
         <span id="drop-icon"></span>
         <p><b>اسحب الملف هنا أو اضغط للاختيار</b></p>
@@ -46,7 +49,8 @@
   <footer class="site-footer">Copyright © 2018 - <span id="y"></span> HOPE CENTER</footer>
 
   <script type="module">
-    import { loadCatalog, esc, icons } from './assets/js/catalog.js';
+    import { loadCatalog, esc, icons, mountAuthLink, hasBackend } from './assets/js/catalog.js';
+    mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('drop-icon').innerHTML = icons.upload;
 
@@ -54,7 +58,9 @@
     try {
       const models = await loadCatalog();
       if (!models.length) {
-        gallery.innerHTML = '<div class="empty">لا توجد مجسّمات بعد. أضف ملفات <bdi>GLB</bdi> إلى مجلد <bdi>models</bdi> ثم شغّل <bdi>tools/build-catalog.ps1</bdi>.</div>';
+        gallery.innerHTML = hasBackend
+          ? '<div class="empty">لا توجد مجسّمات بعد. سجّل الدخول ثم اضغط «رفع نموذج».</div>'
+          : '<div class="empty">لا توجد مجسّمات بعد. أضف ملفات <bdi>GLB</bdi> إلى مجلد <bdi>models</bdi> ثم شغّل <bdi>tools/build-catalog.ps1</bdi>.</div>';
       }
       gallery.innerHTML = models.map((m) => `
         <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">

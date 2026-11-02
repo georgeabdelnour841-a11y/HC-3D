@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>رفع نموذج — مركز الرجاء المسيحي</title>
+  <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="./" aria-label="مركز الرجاء المسيحي — الصفحة الرئيسية">
+      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
+      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
+    </a>
+    <div class="header-end">
+      <span class="title" id="who"></span>
+      <button class="btn btn-outline btn-sm" id="logout" type="button">خروج</button>
+    </div>
+  </header>
+
+  <main>
+    <a class="back" href="./"><span id="back-icon"></span>المعرض</a>
+    <h1>رفع نموذج جديد</h1>
+    <p class="lead">ملف <bdi>GLB</bdi> واحد حتى <bdi>50 MB</bdi>، مُصدَّر من <bdi>Blender</bdi> بالحجم الحقيقي بالمتر. تُلتقط الصورة المصغّرة تلقائياً من المعاينة.</p>
+
+    <div class="upload-layout">
+      <form id="form" class="form" novalidate>
+        <div class="field">
+          <label for="glb">ملف النموذج (<bdi>.glb</bdi>)</label>
+          <input id="glb" type="file" accept=".glb,model/gltf-binary" required>
+        </div>
+        <div class="field">
+          <label for="title">الاسم</label>
+          <input id="title" type="text" maxlength="120" required>
+        </div>
+        <div class="field">
+          <label for="description">الوصف (اختياري)</label>
+          <textarea id="description" maxlength="1000"></textarea>
+        </div>
+        <div class="field">
+          <label for="tags">وسوم (اختياري)</label>
+          <input id="tags" type="text" placeholder="مثال: أثاث، تعليمي">
+          <small>افصل بينها بفاصلة.</small>
+        </div>
+        <div class="field">
+          <label for="usdz">ملف <bdi>USDZ</bdi> لأجهزة <bdi>iPhone</bdi> (اختياري)</label>
+          <input id="usdz" type="file" accept=".usdz,model/vnd.usdz+zip">
+          <small>إن لم تضفه، يُنشأ تلقائياً على <bdi>iPhone</bdi> من ملف <bdi>GLB</bdi>.</small>
+        </div>
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <div class="status-line" id="status" hidden><span class="spinner" aria-hidden="true"></span><span id="status-text"></span></div>
+        <div class="btn-row">
+          <button class="btn" type="submit" id="submit"></button>
+        </div>
+      </form>
+
+      <div>
+        <div class="stage preview-stage">
+          <model-viewer id="mv" camera-controls touch-action="pan-y" shadow-intensity="1" alt="معاينة النموذج" interaction-prompt="none"></model-viewer>
+        </div>
+        <div class="dims" style="margin-block-start:12px" aria-live="polite">
+          <div><b id="dw">—</b><span>العرض</span></div>
+          <div><b id="dh">—</b><span>الارتفاع</span></div>
+          <div><b id="dd">—</b><span>العمق</span></div>
+        </div>
+        <div class="notice" id="scale-warn" style="margin-block-start:12px" hidden></div>
+      </div>
+    </div>
+
+    <section class="section" aria-labelledby="mine-h">
+      <h2 id="mine-h">نماذجي</h2>
+      <div class="mine" id="mine" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">Copyright © 2018 - <span id="y"></span> HOPE CENTER</footer>
+
+  <script type="module">
+    import { getClient, getUser, hasBackend, fromRow, BUCKET, esc, icons, toast, siteUrl, shareLink } from './assets/js/catalog.js';
+    document.getElementById('y').textContent = new Date().getFullYear();
+    document.getElementById('back-icon').innerHTML = icons.back;
+    document.getElementById('submit').innerHTML = icons.upload + 'رفع ونشر';
+
+    const stop = (url) => { location.replace(url); return new Promise(() => {}); };
+    if (!hasBackend) await stop('login.html');
+    const sb = await getClient();
+    const user = await getUser();
+    if (!user) await stop('login.html?next=upload.html');
+
+    document.getElementById('who').innerHTML = '<bdi>' + esc(user.email) + '</bdi>';
+    document.getElementById('logout').addEventListener('click', async () => {
+      await sb.auth.signOut();
+      location.replace('./');
+    });
+
+    const MAX = 50 * 1024 * 1024;
+    const $ = (id) => document.getElementById(id);
+    const mv = $('mv');
+    let dims = null;
+    let objectUrl;
+
+    const fmt = (m) => m >= 1 ? m.toFixed(2) + ' م' : Math.round(m * 100) + ' سم';
+    function error(msg) { $('form-error').textContent = msg; $('form-error').hidden = !msg; }
+    function status(msg) { $('status').hidden = !msg; $('status-text').textContent = msg || ''; }
+
+    $('glb').addEventListener('change', () => {
+      const f = $('glb').files[0];
+      error('');
+      dims = null;
+      ['dw', 'dh', 'dd'].forEach((i) => ($(i).textContent = '—'));
+      $('scale-warn').hidden = true;
+      if (!f) return;
+      if (!/\.glb$/i.test(f.name)) return error('الملف يجب أن يكون بصيغة GLB.');
+      if (f.size > MAX) return error('حجم الملف ' + (f.size / 1048576).toFixed(1) + ' MB، والحد الأقصى 50 MB. فعّل ضغط Draco عند التصدير من Blender.');
+      if (!$('title').value) $('title').value = f.name.replace(/\.glb$/i, '').replace(/[_-]+/g, ' ');
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(f);
+      mv.src = objectUrl;
+    });
+
+    mv.addEventListener('load', () => {
+      const d = mv.getDimensions();
+      dims = d;
+      $('dw').textContent = fmt(d.x); $('dh').textContent = fmt(d.y); $('dd').textContent = fmt(d.z);
+      const biggest = Math.max(d.x, d.y, d.z);
+      const w = $('scale-warn');
+      if (biggest > 20 || biggest < 0.02) {
+        w.innerHTML = icons.info + '<div>تحقّق من الحجم: أكبر بُعد هو ' + fmt(biggest) + '. إذا لم يكن هذا الحجم الحقيقي فاضبط المقياس في <bdi>Blender</bdi> قبل الرفع، وإلا سيظهر بحجم خاطئ في <bdi>AR</bdi>.</div>';
+        w.hidden = false;
+      } else {
+        w.hidden = true;
+      }
+    });
+    mv.addEventListener('error', () => { if ($('glb').files[0]) error('تعذّر قراءة الملف. تأكد أنه GLB سليم.'); });
+
+    async function put(path, body, contentType) {
+      const { error: e } = await sb.storage.from(BUCKET).upload(path, body, { contentType, upsert: false });
+      if (e) throw e;
+      return path;
+    }
+
+    $('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      error('');
+      const glb = $('glb').files[0];
+      const usdz = $('usdz').files[0];
+      const title = $('title').value.trim();
+      if (!glb) return error('اختر ملف GLB.');
+      if (glb.size > MAX || (usdz && usdz.size > MAX)) return error('كل ملف يجب أن يكون أصغر من 50 MB.');
+      if (!title) return error('اكتب اسماً للنموذج.');
+      if (!mv.loaded) return error('انتظر حتى تظهر المعاينة.');
+
+      const base = `${user.id}/${crypto.randomUUID()}`;
+      const uploaded = [];
+      $('submit').disabled = true;
+      try {
+        status('رفع ملف النموذج…');
+        uploaded.push(await put(base + '.glb', glb, 'model/gltf-binary'));
+
+        let posterPath = null;
+        try {
+          status('حفظ الصورة المصغّرة…');
+          const blob = await mv.toBlob({ mimeType: 'image/webp', qualityArgument: 0.85, idealAspect: true });
+          const ext = blob.type === 'image/webp' ? 'webp' : 'png';
+          posterPath = await put(`${base}.${ext}`, blob, blob.type || 'image/png');
+          uploaded.push(posterPath);
+        } catch (err) { console.warn('poster skipped', err); }
+
+        let usdzPath = null;
+        if (usdz) {
+          status('رفع ملف USDZ…');
+          usdzPath = await put(base + '.usdz', usdz, 'model/vnd.usdz+zip');
+          uploaded.push(usdzPath);
+        }
+
+        status('حفظ البيانات…');
+        const tags = $('tags').value.split(/[,،]/).map((t) => t.trim()).filter(Boolean).slice(0, 10);
+        const { data, error: insErr } = await sb.from('models').insert({
+          title, description: $('description').value.trim(), tags,
+          glb_path: base + '.glb', usdz_path: usdzPath, poster_path: posterPath,
+          width_m: dims?.x ?? null, height_m: dims?.y ?? null, depth_m: dims?.z ?? null,
+        }).select().single();
+        if (insErr) throw insErr;
+
+        status('');
+        $('form').reset();
+        mv.src = '';
+        ['dw', 'dh', 'dd'].forEach((i) => ($(i).textContent = '—'));
+        toast('تم النشر');
+        loadMine();
+        shareLink(data.title, siteUrl('view.html?m=' + data.id));
+      } catch (err) {
+        console.error(err);
+        if (uploaded.length) await sb.storage.from(BUCKET).remove(uploaded);
+        status('');
+        error('فشل الرفع: ' + (err.message || err));
+      } finally {
+        $('submit').disabled = false;
+      }
+    });
+
+    async function loadMine() {
+      const box = $('mine');
+      const { data, error: e } = await sb.from('models').select('*').eq('owner', user.id).order('created_at', { ascending: false });
+      if (e) { box.innerHTML = '<p class="error">تعذّر تحميل القائمة.</p>'; return; }
+      if (!data.length) { box.innerHTML = '<div class="empty">لم ترفع أي نموذج بعد.</div>'; return; }
+      box.innerHTML = data.map((r) => {
+        const m = fromRow(sb, r);
+        return `<div class="mine-row" data-id="${m.id}">
+          ${m.poster ? `<img src="${esc(m.poster)}" alt="" loading="lazy">` : '<img alt="">'}
+          <div class="grow"><b>${esc(m.title)}</b><span>${new Date(r.created_at).toLocaleDateString('ar-SY', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+          <a class="btn btn-outline btn-sm" href="view.html?m=${m.id}">عرض</a>
+          <button class="btn btn-outline btn-sm" type="button" data-act="share">${icons.share}مشاركة</button>
+          <button class="btn btn-danger btn-sm" type="button" data-act="delete">حذف</button>
+        </div>`;
+      }).join('');
+      box.onclick = async (ev) => {
+        const btn = ev.target.closest('button[data-act]');
+        if (!btn) return;
+        const row = data.find((r) => r.id === btn.closest('.mine-row').dataset.id);
+        if (btn.dataset.act === 'share') return shareLink(row.title, siteUrl('view.html?m=' + row.id));
+        if (!confirm('حذف «' + row.title + '» نهائياً؟ سيتوقف رابطه عن العمل.')) return;
+        btn.disabled = true;
+        const { error: delErr } = await sb.from('models').delete().eq('id', row.id);
+        if (delErr) { btn.disabled = false; return toast('تعذّر الحذف'); }
+        await sb.storage.from(BUCKET).remove([row.glb_path, row.usdz_path, row.poster_path].filter(Boolean));
+        toast('تم الحذف');
+        loadMine();
+      };
+    }
+    loadMine();
+  </script>
+</body>
+</html>

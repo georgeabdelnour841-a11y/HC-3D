@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تسجيل الدخول — مركز الرجاء المسيحي</title>
+  <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="./" aria-label="مركز الرجاء المسيحي — الصفحة الرئيسية">
+      <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
+      <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
+    </a>
+    <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+  </header>
+
+  <main class="narrow">
+    <!-- Sign in -->
+    <form id="login" class="form" hidden>
+      <h1>تسجيل الدخول</h1>
+      <p class="lead">لرفع النماذج وإدارتها. الحسابات بدعوة فقط — اطلب دعوة من مسؤول المنصة.</p>
+      <div class="field">
+        <label for="email">البريد الإلكتروني</label>
+        <input id="email" type="email" autocomplete="email" dir="ltr" required>
+      </div>
+      <div class="field">
+        <label for="password">كلمة المرور</label>
+        <input id="password" type="password" autocomplete="current-password" dir="ltr" required>
+      </div>
+      <p class="error" id="login-error" role="alert" hidden></p>
+      <div class="btn-row">
+        <button class="btn" type="submit">دخول</button>
+        <button class="btn btn-outline" type="button" id="forgot">نسيت كلمة المرور</button>
+      </div>
+    </form>
+
+    <!-- Set password: after an invite or a reset link -->
+    <form id="set-password" class="form" hidden>
+      <h1 id="sp-title">اختر كلمة المرور</h1>
+      <p class="lead">ستستخدمها مع بريدك لتسجيل الدخول لاحقاً.</p>
+      <div class="field">
+        <label for="new-password">كلمة المرور الجديدة</label>
+        <input id="new-password" type="password" autocomplete="new-password" dir="ltr" minlength="8" required>
+        <small>8 أحرف على الأقل.</small>
+      </div>
+      <p class="error" id="sp-error" role="alert" hidden></p>
+      <button class="btn" type="submit">حفظ والمتابعة</button>
+    </form>
+
+    <div id="not-configured" class="notice" hidden></div>
+  </main>
+
+  <script type="module">
+    import { getClient, hasBackend, icons, toast } from './assets/js/catalog.js';
+
+    // Read the link type before supabase-js consumes the URL hash.
+    const hash = new URLSearchParams(location.hash.slice(1));
+    const linkType = hash.get('type');
+    const linkError = hash.get('error_description');
+    const next = new URLSearchParams(location.search).get('next') || 'upload.html';
+    const go = () => location.replace(/^[\w.-]+\.html/.test(next) ? next : 'upload.html');
+    const showError = (el, msg) => { el.textContent = msg; el.hidden = false; };
+
+    const login = document.getElementById('login');
+    const setPw = document.getElementById('set-password');
+
+    if (!hasBackend) {
+      const nc = document.getElementById('not-configured');
+      nc.innerHTML = icons.info + '<div>تسجيل الدخول غير مفعّل بعد: أضف بيانات مشروع <bdi>Supabase</bdi> في <bdi>assets/js/config.js</bdi>.</div>';
+      nc.hidden = false;
+    } else {
+      const sb = await getClient();
+      const { data: { session } } = await sb.auth.getSession();
+
+      if (linkType === 'invite' || linkType === 'recovery') {
+        if (linkType === 'recovery') document.getElementById('sp-title').textContent = 'كلمة مرور جديدة';
+        setPw.hidden = false;
+        if (!session) showError(document.getElementById('sp-error'), 'انتهت صلاحية الرابط أو استُخدم من قبل. اطلب رابطاً جديداً.');
+      } else if (session) {
+        go();
+      } else {
+        login.hidden = false;
+        if (linkError) showError(document.getElementById('login-error'), 'الرابط غير صالح أو منتهي الصلاحية.');
+      }
+
+      login.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = login.querySelector('[type=submit]');
+        btn.disabled = true;
+        const { error } = await sb.auth.signInWithPassword({
+          email: document.getElementById('email').value.trim(),
+          password: document.getElementById('password').value,
+        });
+        btn.disabled = false;
+        if (error) return showError(document.getElementById('login-error'), 'البريد أو كلمة المرور غير صحيحة.');
+        go();
+      });
+
+      document.getElementById('forgot').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const err = document.getElementById('login-error');
+        if (!email) return showError(err, 'اكتب بريدك الإلكتروني أولاً.');
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: new URL('login.html', location.href).href });
+        if (error) return showError(err, 'تعذّر الإرسال، حاول بعد قليل.');
+        err.hidden = true;
+        toast('أرسلنا رابط إعادة التعيين إلى بريدك');
+      });
+
+      setPw.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const { error } = await sb.auth.updateUser({ password: document.getElementById('new-password').value });
+        if (error) return showError(document.getElementById('sp-error'), 'تعذّر حفظ كلمة المرور: ' + error.message);
+        history.replaceState(null, '', location.pathname);
+        go();
+      });
+    }
+  </script>
+</body>
+</html>

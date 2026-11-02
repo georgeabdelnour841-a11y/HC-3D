@@ -1,14 +1,68 @@
-// Shared helpers: catalog loading, icons, share/toast.
-export async function loadCatalog() {
+// Shared helpers: catalog loading (Supabase, or static models.json until configured), auth, icons, share/toast.
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+
+export const BUCKET = 'models';
+export const hasBackend = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+let clientPromise;
+export function getClient() {
+  if (!hasBackend) return Promise.resolve(null);
+  clientPromise ??= import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm')
+    .then(({ createClient }) => createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+  return clientPromise;
+}
+
+export async function getUser() {
+  const sb = await getClient();
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
+  return data.session?.user ?? null;
+}
+
+function publicUrl(sb, path) {
+  return path ? sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl : '';
+}
+
+// Turns a database row into the shape the pages use.
+export function fromRow(sb, r) {
+  return {
+    id: r.id, title: r.title, description: r.description, tags: r.tags || [],
+    src: publicUrl(sb, r.glb_path), usdz: publicUrl(sb, r.usdz_path), poster: publicUrl(sb, r.poster_path),
+    owner: r.owner, row: r,
+  };
+}
+
+async function loadStatic() {
   const res = await fetch('models/models.json', { cache: 'no-cache' });
   if (!res.ok) throw new Error('models.json ' + res.status);
   const data = await res.json();
   return Array.isArray(data) ? data : (data.models || []);
 }
 
+export async function loadCatalog() {
+  const sb = await getClient();
+  if (!sb) return loadStatic();
+  const { data, error } = await sb.from('models').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data.map((r) => fromRow(sb, r));
+}
+
 export async function findModel(id) {
-  const list = await loadCatalog();
-  return list.find((m) => m.id === id) || null;
+  const sb = await getClient();
+  if (!sb) return (await loadStatic()).find((m) => m.id === id) || null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data, error } = await sb.from('models').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(sb, data) : null;
+}
+
+// Header link: "رفع نموذج" when signed in, "تسجيل الدخول" otherwise. Hidden until a backend is configured.
+export async function mountAuthLink(el) {
+  if (!el || !hasBackend) return;
+  const user = await getUser();
+  el.href = user ? 'upload.html' : 'login.html';
+  el.innerHTML = user ? icons.upload + 'رفع نموذج' : 'تسجيل الدخول';
+  el.hidden = false;
 }
 
 export function param(name) {

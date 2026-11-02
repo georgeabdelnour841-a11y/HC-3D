@@ -8,6 +8,25 @@
 | `view.html?m=<id>` | عرض 3D، الأبعاد الحقيقية، زر **AR**، مشاركة الرابط، رمز QR |
 | `vr.html?m=<id>` | مشهد **VR** لنظارات مثل Meta Quest، مع وضع **AR** (Passthrough) |
 
+## 0) تسجيل الدخول والرفع (Supabase)
+
+المشاهدة والمشاركة متاحة للجميع بدون حساب. الرفع يحتاج تسجيل دخول، والحسابات بدعوة فقط.
+
+1. أنشئ حساباً ومشروعاً مجانياً على **supabase.com**.
+2. **SQL Editor → New query**: الصق محتوى `supabase/setup.sql` واضغط **Run**.
+3. **Authentication → Sign In / Providers → Email**: أطفئ **Allow new users to sign up** (لا تسجيل إلا بدعوة).
+4. **Authentication → URL Configuration**:
+   - Site URL: `https://georgeabdelnour841-a11y.github.io/HC-3D/login.html`
+   - Redirect URLs: أضف `https://georgeabdelnour841-a11y.github.io/HC-3D/**` و `http://localhost:8080/**`
+5. **Project Settings → API**: انسخ **Project URL** و **anon / publishable key** إلى `assets/js/config.js`. (لا تضع أبداً مفتاح `service_role`.)
+6. لدعوة شخص: **Authentication → Users → Invite user**. يصله بريد، يفتح الرابط، يختار كلمة مرور، ثم يرفع من صفحة `upload.html`.
+
+حدود الخطة المجانية: 1 GB تخزين، و 50 MB لكل ملف. بريد الدعوات المجاني محدود بعدد قليل من الرسائل في الساعة.
+
+صفحة الرفع تعرض معاينة وأبعاد النموذج، وتحذّر إذا بدا الحجم غير واقعي، وتلتقط صورة مصغّرة تلقائياً. كل مستخدم يرى نماذجه ويستطيع مشاركتها أو حذفها.
+
+إذا كان `config.js` فارغاً يعمل الموقع كما كان من `models/models.json` (القسم 2 أدناه).
+
 ## 1) تجهيز المجسّم في Blender
 
 1. استورد ملف Tripo، واضبط **الحجم الحقيقي بالمتر** (Scene Properties → Units = Metric, Unit Scale = 1). مجسّم طوله 1.8 م يجب أن يكون 1.8 في Blender — هكذا يظهر بحجمه الحقيقي في AR.

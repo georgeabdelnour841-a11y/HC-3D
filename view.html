@@ -15,7 +15,10 @@
       <img class="logo logo-light" src="assets/img/hope-center.svg" alt="مركز الرجاء المسيحي">
       <img class="logo logo-dark" src="assets/img/hope-center-white.svg" alt="مركز الرجاء المسيحي">
     </a>
-    <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+    <div class="header-end">
+      <p class="title">معرض <bdi>3D</bdi> · <bdi>AR</bdi> · <bdi>VR</bdi></p>
+      <a class="btn btn-outline btn-sm" id="auth-link" hidden></a>
+    </div>
   </header>
 
   <main>
@@ -66,7 +69,8 @@
   <footer class="site-footer">Copyright © 2018 - <span id="y"></span> HOPE CENTER</footer>
 
   <script type="module">
-    import { findModel, param, siteUrl, esc, icons, shareLink } from './assets/js/catalog.js';
+    import { findModel, param, siteUrl, esc, icons, shareLink, mountAuthLink } from './assets/js/catalog.js';
+    mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('back-icon').innerHTML = icons.back;
 
