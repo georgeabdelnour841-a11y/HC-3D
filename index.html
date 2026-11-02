@@ -34,7 +34,7 @@
         <p class="lead" data-i18n="index.heroLead"></p>
 
         <div class="featured-meta" id="hero-info" hidden>
-          <span class="eyebrow" data-i18n="index.featured"></span>
+          <span class="eyebrow" id="hero-eyebrow" data-i18n="index.featured"></span>
           <p class="hero-model" id="hero-title" dir="auto"></p>
           <p class="hero-dims" id="hero-dims" aria-live="polite"></p>
         </div>
@@ -126,7 +126,7 @@
   </footer>
 
   <script type="module">
-    import { loadCatalog, esc, icons, mountAuthLink, hasBackend, siteUrl } from './assets/js/catalog.js';
+    import { loadCatalog, demoModel, esc, icons, mountAuthLink, siteUrl } from './assets/js/catalog.js';
     import { t, formatLength } from './assets/js/i18n.js';
     import { FEATURED_MODEL_ID } from './assets/js/config.js';
     mountAuthLink(document.getElementById('auth-link'));
@@ -173,22 +173,13 @@
       $('hero-details').hidden = false;
     }
 
-    const gallery = $('gallery');
-    try {
-      const models = await loadCatalog();
-      const featured = models.find((m) => m.id === FEATURED_MODEL_ID) || models[0];
-      if (featured) showFeatured(featured);
-      else $('hero-stage').hidden = true;
-
-      $('count').textContent = models.length ? t('index.count', { n: models.length }) : '';
-      gallery.innerHTML = models.length
-        ? models.map((m) => {
-          const h = m.row?.height_m;
-          return `
-        <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">
+    function card(m) {
+      const h = m.row?.height_m;
+      return `
+        <a class="card${m.demo ? ' is-demo' : ''}" href="view.html?m=${encodeURIComponent(m.id)}">
           <span class="thumb">${m.poster
             ? `<img src="${esc(m.poster)}" alt="" loading="lazy">`
-            : `<model-viewer src="${esc(m.src)}" loading="lazy" reveal="auto" interaction-prompt="none" disable-zoom disable-pan auto-rotate auto-rotate-delay="0" rotation-per-second="20deg" alt="${esc(m.title)}"></model-viewer>`}
+            : `<model-viewer src="${esc(m.src)}" loading="lazy" reveal="auto" interaction-prompt="none" disable-zoom disable-pan auto-rotate auto-rotate-delay="0" rotation-per-second="20deg" camera-orbit="35deg 75deg auto" alt="${esc(m.title)}"></model-viewer>`}
             <span class="badge">${icons.ar}<bdi>AR</bdi> · <bdi>VR</bdi></span>
           </span>
           <span class="body">
@@ -198,12 +189,29 @@
             ${m.tags?.length ? `<span class="tags">${m.tags.map((tag) => `<span class="tag" dir="auto">${esc(tag)}</span>`).join('')}</span>` : ''}
           </span>
         </a>`;
-        }).join('')
-        : '<div class="empty">' + t(hasBackend ? 'index.emptyBackend' : 'index.emptyStatic') + '</div>';
+    }
+
+    // With nothing published (or the database unreachable) the built-in demo fills the hero and the gallery.
+    function useDemo(note) {
+      showFeatured(demoModel());
+      $('hero-eyebrow').innerHTML = t('demo.tag');
+      gallery.innerHTML = card(demoModel()) + '<div class="empty demo-note">' + note + '</div>';
+    }
+
+    const gallery = $('gallery');
+    try {
+      const models = await loadCatalog();
+      const featured = models.find((m) => m.id === FEATURED_MODEL_ID) || models[0];
+      if (featured) {
+        showFeatured(featured);
+        $('count').textContent = t('index.count', { n: models.length });
+        gallery.innerHTML = models.map(card).join('');
+      } else {
+        useDemo(t('index.emptyDemo'));
+      }
     } catch (e) {
-      $('hero-stage').hidden = true;
-      gallery.innerHTML = '<div class="notice">' + icons.info + '<div>' + t('index.loadError') + '</div></div>';
       console.error(e);
+      useDemo(icons.info + ' ' + t('index.loadError'));
     }
     gallery.setAttribute('aria-busy', 'false');
 

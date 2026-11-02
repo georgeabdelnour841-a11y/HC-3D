@@ -48,7 +48,19 @@ export async function loadCatalog() {
   return data.map((r) => fromRow(sb, r));
 }
 
+// Built-in example that ships with the site, so every visitor can try AR/VR
+// even before anything is uploaded. Opens at view.html?m=demo.
+export const DEMO_ID = 'demo';
+export function demoModel() {
+  return {
+    id: DEMO_ID, title: t('demo.title'), description: t('demo.description'), tags: [t('demo.tag')],
+    src: 'models/demo-chair.glb', usdz: '', poster: 'models/demo-chair.webp', demo: true,
+    row: { width_m: 0.46, height_m: 0.87, depth_m: 0.44 },
+  };
+}
+
 export async function findModel(id) {
+  if (id === DEMO_ID) return demoModel();
   const sb = await getClient();
   if (!sb) return (await loadStatic()).find((m) => m.id === id) || null;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;

@@ -23,11 +23,11 @@ foreach ($m in $existing) {
     if ($m.src -match '^https?://') { [void]$out.Add($m) }
 }
 
-$files = Get-ChildItem $modelsDir -File | Where-Object { $_.Extension -in '.glb', '.gltf' } | Sort-Object Name
+$files = Get-ChildItem $modelsDir -File | Where-Object { $_.Extension -in '.glb', '.gltf' -and $_.Name -notlike 'demo-*' } | Sort-Object Name
 foreach ($f in $files) {
     $src = "models/$($f.Name)"
     $base = [IO.Path]::GetFileNameWithoutExtension($f.Name)
-    $id = ($base.ToLower() -replace '[^a-z0-9؀-ۿ]+', '-').Trim('-')
+    $id = ($base.ToLower() -replace '[^a-z0-9\p{IsArabic}]+', '-').Trim('-')
     if (-not $id) { $id = 'model-' + ($out.Count + 1) }
 
     $usdz = ''
