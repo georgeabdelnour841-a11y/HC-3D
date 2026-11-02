@@ -10,6 +10,7 @@
   <link rel="preload" href="assets/fonts/SomarSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
   <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -24,38 +25,81 @@
     </div>
   </header>
 
-  <main>
-    <section class="hero">
-      <div>
-        <h1 data-i18n="index.h1"></h1>
-        <p class="lead" data-i18n="index.lead"></p>
-        <div id="hero-info" hidden>
+  <main class="home">
+    <!-- Hero: headline + the featured model -->
+    <section class="hero" aria-labelledby="hero-h">
+      <div class="hero-text">
+        <span class="pill" data-i18n="index.kicker"></span>
+        <h1 id="hero-h" data-i18n="index.heroH"></h1>
+        <p class="lead" data-i18n="index.heroLead"></p>
+
+        <div class="featured-meta" id="hero-info" hidden>
           <span class="eyebrow" data-i18n="index.featured"></span>
           <p class="hero-model" id="hero-title" dir="auto"></p>
-          <div class="btn-row hero-actions">
-            <a class="btn btn-outline" id="hero-vr"></a>
-            <a class="btn btn-outline" id="hero-details"></a>
-          </div>
+          <p class="hero-dims" id="hero-dims" aria-live="polite"></p>
         </div>
+
+        <div class="btn-row hero-actions" id="hero-actions" hidden>
+          <button class="btn btn-lg" id="hero-ar" type="button"></button>
+          <a class="btn btn-outline btn-lg" id="hero-vr"></a>
+        </div>
+        <a class="more-link" id="hero-details" hidden></a>
       </div>
-      <div class="stage hero-stage" id="hero-stage" hidden>
+
+      <div class="stage hero-stage" id="hero-stage">
         <model-viewer id="hero-mv" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1"
-          auto-rotate auto-rotate-delay="1500" rotation-per-second="18deg" interaction-prompt="none"
+          auto-rotate auto-rotate-delay="1200" rotation-per-second="16deg" interaction-prompt="none"
           ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" alt="">
-          <button slot="ar-button" class="btn ar-btn" id="hero-ar"></button>
+          <!-- AR is started from the hero button instead; this empty slot hides model-viewer's own button. -->
+          <span slot="ar-button" hidden></span>
         </model-viewer>
+        <span class="stage-hint" id="stage-hint" data-i18n="index.dragHint"></span>
       </div>
     </section>
 
-    <h2 id="all-h" data-i18n="index.allH"></h2>
-    <div id="gallery" class="grid" aria-live="polite" aria-labelledby="all-h"></div>
+    <!-- How it works -->
+    <section class="steps" aria-labelledby="steps-h">
+      <h2 id="steps-h" data-i18n="index.stepsH"></h2>
+      <ol class="steps-list">
+        <li>
+          <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg></span>
+          <h3 data-i18n="index.step1H"></h3>
+          <p data-i18n="index.step1"></p>
+        </li>
+        <li>
+          <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M11 18h2"/></svg></span>
+          <h3 data-i18n="index.step2H"></h3>
+          <p data-i18n="index.step2"></p>
+        </li>
+        <li>
+          <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 15.3 8.7 2.7a1 1 0 0 0-1.4 0L2.7 7.3a1 1 0 0 0 0 1.4l12.6 12.6a1 1 0 0 0 1.4 0l4.6-4.6a1 1 0 0 0 0-1.4z"/><path d="m7.5 10.5 2-2M10.5 13.5l2-2M13.5 16.5l2-2"/></svg></span>
+          <h3 data-i18n="index.step3H"></h3>
+          <p data-i18n="index.step3"></p>
+        </li>
+      </ol>
+      <p class="devices" data-i18n="index.devices"></p>
+    </section>
 
-    <section class="section" aria-labelledby="try-h">
-      <h2 id="try-h" data-i18n="index.tryH"></h2>
+    <!-- Gallery -->
+    <section class="section" aria-labelledby="all-h">
+      <div class="section-head">
+        <h2 id="all-h" data-i18n="index.allH"></h2>
+        <span class="count" id="count"></span>
+      </div>
+      <div id="gallery" class="grid" aria-live="polite" aria-busy="true">
+        <div class="card skeleton" aria-hidden="true"><span class="thumb"></span><span class="body"><span class="line"></span><span class="line short"></span></span></div>
+        <div class="card skeleton" aria-hidden="true"><span class="thumb"></span><span class="body"><span class="line"></span><span class="line short"></span></span></div>
+        <div class="card skeleton" aria-hidden="true"><span class="thumb"></span><span class="body"><span class="line"></span><span class="line short"></span></span></div>
+      </div>
+    </section>
+
+    <!-- Designer tool, kept out of the way of visitors -->
+    <details class="section tool">
+      <summary data-i18n="index.tryH"></summary>
       <p class="lead" data-i18n="index.tryLead"></p>
       <label class="dropzone" id="drop">
         <span id="drop-icon"></span>
-        <p><b data-i18n="index.dropMain"></b></p>
+        <b data-i18n="index.dropMain"></b>
         <small data-i18n="index.dropHint"></small>
         <input type="file" id="file" class="sr-only" accept=".glb,.gltf,model/gltf-binary,model/gltf+json">
       </label>
@@ -66,66 +110,108 @@
           </model-viewer>
         </div>
       </div>
-    </section>
+    </details>
   </main>
 
-  <footer class="site-footer">Copyright © 2018 - <span id="y"></span> HOPE CENTER</footer>
+  <!-- Shown on devices without AR: open the featured model on a phone -->
+  <dialog class="qr-dialog" id="qr-dialog" aria-labelledby="qr-h">
+    <h2 id="qr-h" data-i18n="index.qrH"></h2>
+    <div id="hero-qr" class="qr-code"></div>
+    <p data-i18n="index.qrText"></p>
+    <form method="dialog"><button class="btn btn-outline" data-i18n="index.close"></button></form>
+  </dialog>
+
+  <footer class="site-footer">
+    <span data-i18n="site.name"></span> · Copyright © 2018 - <span id="y"></span> HOPE CENTER
+  </footer>
 
   <script type="module">
-    import { loadCatalog, esc, icons, mountAuthLink, hasBackend } from './assets/js/catalog.js';
-    import { t } from './assets/js/i18n.js';
+    import { loadCatalog, esc, icons, mountAuthLink, hasBackend, siteUrl } from './assets/js/catalog.js';
+    import { t, formatLength } from './assets/js/i18n.js';
     import { FEATURED_MODEL_ID } from './assets/js/config.js';
     mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('drop-icon').innerHTML = icons.upload;
 
-    // Hero: the configured featured model, or the newest one. The poster shows at once while the GLB loads.
+    const $ = (id) => document.getElementById(id);
+    const dims = (x, y, z) => [x, y, z].map(formatLength).join(' × ');
+
+    // Hero: the configured featured model, or the newest one.
     function showFeatured(m) {
-      const mv = document.getElementById('hero-mv');
+      const mv = $('hero-mv');
       if (m.poster) mv.poster = m.poster;
       if (m.usdz) mv.setAttribute('ios-src', m.usdz);
       mv.alt = m.title;
       mv.src = m.src;
-      document.getElementById('hero-title').textContent = m.title;
-      document.getElementById('hero-ar').innerHTML = icons.ar + t('ar.place');
-      const vr = document.getElementById('hero-vr');
-      vr.href = 'vr.html?m=' + encodeURIComponent(m.id);
-      vr.innerHTML = icons.vr + t('vr.enter');
-      const details = document.getElementById('hero-details');
-      details.href = 'view.html?m=' + encodeURIComponent(m.id);
-      details.innerHTML = icons.share + t('index.details');
-      document.getElementById('hero-info').hidden = false;
-      document.getElementById('hero-stage').hidden = false;
+      $('hero-title').textContent = m.title;
+      if (m.row?.width_m) $('hero-dims').textContent = dims(m.row.width_m, m.row.height_m, m.row.depth_m);
+      mv.addEventListener('load', () => { const d = mv.getDimensions(); $('hero-dims').textContent = dims(d.x, d.y, d.z); }, { once: true });
+
+      const viewUrl = 'view.html?m=' + encodeURIComponent(m.id);
+      $('hero-ar').innerHTML = icons.ar + t('ar.place');
+      $('hero-vr').href = 'vr.html?m=' + encodeURIComponent(m.id);
+      $('hero-vr').innerHTML = icons.vr + t('vr.enter');
+      $('hero-details').href = viewUrl;
+      $('hero-details').innerHTML = t('index.details') + ' ' + icons.back.replace('icon-dir', 'icon-dir icon-fwd');
+
+      // On phones this opens AR; elsewhere it shows a QR code to continue on a phone.
+      let qrDone = false;
+      $('hero-ar').addEventListener('click', () => {
+        if (mv.canActivateAR) return mv.activateAR();
+        if (!qrDone) {
+          new QRCode($('hero-qr'), { text: siteUrl(viewUrl), width: 168, height: 168, colorDark: '#414042', colorLight: '#FFFFFF' });
+          qrDone = true;
+        }
+        $('qr-dialog').showModal();
+      });
+
+      // Hide the "drag to rotate" hint once the visitor interacts.
+      mv.addEventListener('camera-change', (e) => { if (e.detail.source === 'user-interaction') $('stage-hint').classList.add('is-hidden'); });
+
+      $('hero-info').hidden = false;
+      $('hero-actions').hidden = false;
+      $('hero-details').hidden = false;
     }
 
-    const gallery = document.getElementById('gallery');
+    const gallery = $('gallery');
     try {
       const models = await loadCatalog();
       const featured = models.find((m) => m.id === FEATURED_MODEL_ID) || models[0];
       if (featured) showFeatured(featured);
+      else $('hero-stage').hidden = true;
+
+      $('count').textContent = models.length ? t('index.count', { n: models.length }) : '';
       gallery.innerHTML = models.length
-        ? models.map((m) => `
+        ? models.map((m) => {
+          const h = m.row?.height_m;
+          return `
         <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">
           <span class="thumb">${m.poster
             ? `<img src="${esc(m.poster)}" alt="" loading="lazy">`
-            : `<model-viewer src="${esc(m.src)}" loading="lazy" reveal="auto" interaction-prompt="none" disable-zoom disable-pan auto-rotate auto-rotate-delay="0" rotation-per-second="20deg" alt="${esc(m.title)}"></model-viewer>`}</span>
+            : `<model-viewer src="${esc(m.src)}" loading="lazy" reveal="auto" interaction-prompt="none" disable-zoom disable-pan auto-rotate auto-rotate-delay="0" rotation-per-second="20deg" alt="${esc(m.title)}"></model-viewer>`}
+            <span class="badge">${icons.ar}<bdi>AR</bdi> · <bdi>VR</bdi></span>
+          </span>
           <span class="body">
             <h3 dir="auto">${esc(m.title)}</h3>
             ${m.description ? `<p dir="auto">${esc(m.description)}</p>` : ''}
+            ${h ? `<span class="meta">${t('dim.h')}: ${formatLength(h)}</span>` : ''}
             ${m.tags?.length ? `<span class="tags">${m.tags.map((tag) => `<span class="tag" dir="auto">${esc(tag)}</span>`).join('')}</span>` : ''}
           </span>
-        </a>`).join('')
+        </a>`;
+        }).join('')
         : '<div class="empty">' + t(hasBackend ? 'index.emptyBackend' : 'index.emptyStatic') + '</div>';
     } catch (e) {
+      $('hero-stage').hidden = true;
       gallery.innerHTML = '<div class="notice">' + icons.info + '<div>' + t('index.loadError') + '</div></div>';
       console.error(e);
     }
+    gallery.setAttribute('aria-busy', 'false');
 
     // Local preview: object URL, never uploaded.
-    const drop = document.getElementById('drop');
-    const input = document.getElementById('file');
-    const local = document.getElementById('local');
-    const mv = document.getElementById('local-mv');
+    const drop = $('drop');
+    const input = $('file');
+    const local = $('local');
+    const mv = $('local-mv');
     let lastUrl;
     function show(file) {
       if (!file || !/\.(glb|gltf)$/i.test(file.name)) return;
