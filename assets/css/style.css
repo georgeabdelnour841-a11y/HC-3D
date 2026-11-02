@@ -205,6 +205,37 @@ h2 { font-size: 22px; line-height: 1.4; margin: 0 0 12px; font-weight: 700; }
 
 .site-footer span { color: inherit; }
 
+/* ---------- Model view page ---------- */
+.view .viewer-layout { gap: 28px; align-items: start; }
+@media (min-width: 900px) { .view .viewer-layout { grid-template-columns: minmax(0, 1fr) 380px; } }
+.view-stage { block-size: clamp(340px, 72vh, 680px); border-radius: 20px; }
+@media (min-width: 900px) { .view-stage { position: sticky; inset-block-start: 84px; } }
+@media (max-width: 899px) { .view-stage { block-size: clamp(300px, 52vh, 460px); } }
+.view-panel { gap: 20px; }
+.view-panel h1 { font-size: clamp(26px, 3.4vw, 34px); line-height: 1.25; margin: 10px 0 6px; }
+:root[lang="ar"] .view-panel h1 { line-height: 1.4; }
+.view-desc { margin: 0; color: var(--color-text-muted); }
+.view-panel .tags:empty { display: none; }
+.label-h { font-size: 14px; font-weight: 600; color: var(--color-text-muted); margin: 0 0 8px; }
+.dims div { padding: 12px 8px; border-radius: 12px; }
+.dims b { font-size: 20px; }
+.btn-block { inline-size: 100%; }
+.cta { display: flex; flex-direction: column; gap: 8px; }
+.cta-note { margin: 0; font-size: 14px; color: var(--color-text-muted); text-align: center; }
+.cta-note:empty { display: none; }
+.toggle { display: flex; gap: 10px; align-items: center; min-block-size: 44px; cursor: pointer; font-size: 15px; }
+.toggle input { inline-size: 20px; block-size: 20px; flex: none; accent-color: var(--color-primary); }
+.view-panel .btn-row .btn { flex: 1 1 auto; white-space: nowrap; }
+.qr-box b { display: block; margin-block-end: 2px; }
+/* On a phone that already supports AR, the QR code is pointless. */
+.qr-box.on-phone { display: none; }
+.qr-box.flash { animation: flash 900ms ease 2; }
+/* Floating AR button on the model, phones only (desktop uses the panel button). */
+.stage-ar { position: absolute; inset-block-end: 14px; inset-inline-end: 14px; }
+@media (min-width: 900px) { .stage-ar { display: none; } }
+@keyframes flash { 50% { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary); } }
+.not-found { grid-column: 1 / -1; }
+
 /* Dropzone */
 .section { margin-block-start: 40px; }
 /* It is a <label> (inline by default), so it needs an explicit block box. */

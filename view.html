@@ -24,105 +24,164 @@
     </div>
   </header>
 
-  <main>
+  <main class="view">
     <a class="back" href="./"><span id="back-icon"></span><span data-i18n="view.back"></span></a>
+
     <div id="app" class="viewer-layout">
-      <div class="stage">
+      <div class="stage view-stage">
         <model-viewer id="mv" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1"
+          auto-rotate auto-rotate-delay="2500" rotation-per-second="14deg" interaction-prompt="none"
           ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" alt="">
-          <button slot="ar-button" class="btn ar-btn" id="ar-btn"></button>
+          <!-- AR starts from the panel button; this empty slot hides model-viewer's own button. -->
+          <span slot="ar-button" hidden></span>
         </model-viewer>
+        <span class="stage-hint" id="stage-hint" data-i18n="index.dragHint"></span>
+        <button class="btn stage-ar" id="stage-ar" type="button" hidden></button>
       </div>
 
-      <aside class="panel">
+      <aside class="panel view-panel">
         <div>
+          <span class="pill" data-i18n="view.kicker"></span>
           <h1 id="title" dir="auto">…</h1>
-          <p id="desc" class="lead" dir="auto" style="margin:0"></p>
+          <p id="desc" class="view-desc" dir="auto"></p>
+          <div class="tags" id="tags"></div>
         </div>
 
-        <div>
-          <h2 style="font-size:16px;margin-bottom:6px" data-i18n="view.dims"></h2>
+        <section class="dims-block" aria-labelledby="dims-h">
+          <h2 id="dims-h" class="label-h" data-i18n="view.dims"></h2>
           <div class="dims" aria-live="polite">
             <div><b id="dw">—</b><span data-i18n="dim.w"></span></div>
             <div><b id="dh">—</b><span data-i18n="dim.h"></span></div>
             <div><b id="dd">—</b><span data-i18n="dim.d"></span></div>
           </div>
+        </section>
+
+        <div class="cta">
+          <button class="btn btn-lg btn-block" id="ar-btn" type="button"></button>
+          <p class="cta-note" id="ar-note"></p>
+          <label class="toggle">
+            <input type="checkbox" id="fixed">
+            <span data-i18n="view.fixed"></span>
+          </label>
         </div>
 
-        <label style="display:flex;gap:10px;align-items:center;min-block-size:44px;cursor:pointer">
-          <input type="checkbox" id="fixed" style="inline-size:20px;block-size:20px">
-          <span data-i18n="view.fixed"></span>
-        </label>
-
         <div class="btn-row">
-          <a class="btn" id="vr-btn"></a>
+          <a class="btn btn-outline" id="vr-btn"></a>
           <button class="btn btn-outline" id="share-btn" type="button"></button>
         </div>
 
-        <div class="notice" id="ar-hint" hidden></div>
-
-        <div class="qr-box">
+        <div class="qr-box" id="qr-box">
           <div id="qr" aria-hidden="true"></div>
-          <p data-i18n="view.qr"></p>
+          <div>
+            <b data-i18n="index.qrH"></b>
+            <p data-i18n="view.qr"></p>
+          </div>
         </div>
       </aside>
     </div>
+
+    <section class="section" id="more" aria-labelledby="more-h" hidden>
+      <div class="section-head">
+        <h2 id="more-h" data-i18n="view.more"></h2>
+        <a class="more-link" href="./" id="more-all"></a>
+      </div>
+      <div class="grid" id="more-grid"></div>
+    </section>
   </main>
 
-  <footer class="site-footer">Copyright © 2018 - <span id="y"></span> HOPE CENTER</footer>
+  <footer class="site-footer">
+    <span data-i18n="site.name"></span> · Copyright © 2018 - <span id="y"></span> HOPE CENTER
+  </footer>
 
   <script type="module">
-    import { findModel, param, siteUrl, esc, icons, shareLink, mountAuthLink } from './assets/js/catalog.js';
+    import { findModel, loadCatalog, param, siteUrl, esc, icons, shareLink, mountAuthLink } from './assets/js/catalog.js';
     import { t, setTitle, formatLength } from './assets/js/i18n.js';
     mountAuthLink(document.getElementById('auth-link'));
     document.getElementById('y').textContent = new Date().getFullYear();
     document.getElementById('back-icon').innerHTML = icons.back;
 
+    const $ = (id) => document.getElementById(id);
+    const fwd = icons.back.replace('icon-dir', 'icon-dir icon-fwd');
     const id = param('m');
     const model = id ? await findModel(id).catch(() => null) : null;
-    const app = document.getElementById('app');
+    const app = $('app');
 
     if (!model) {
-      app.innerHTML = '<div class="notice">' + icons.info + '<div>' + t('view.notFound') + '</div></div>';
+      app.innerHTML = '<div class="notice not-found">' + icons.info + '<div>' + t('view.notFound') + '</div></div>';
     } else {
-      const mv = document.getElementById('mv');
+      const mv = $('mv');
       setTitle(model.title, true);
-      document.getElementById('title').textContent = model.title;
-      document.getElementById('desc').textContent = model.description || '';
+      $('title').textContent = model.title;
+      $('desc').textContent = model.description || '';
+      $('desc').hidden = !model.description;
+      $('tags').innerHTML = (model.tags || []).map((tag) => `<span class="tag" dir="auto">${esc(tag)}</span>`).join('');
       mv.alt = model.title;
       if (model.usdz) mv.setAttribute('ios-src', model.usdz);
       if (model.poster) mv.poster = model.poster;
       mv.src = model.src;
 
-      document.getElementById('ar-btn').innerHTML = icons.ar + t('ar.place');
-      const vr = document.getElementById('vr-btn');
+      // Sizes from the database show at once; the loaded model refines them.
+      const setDims = (x, y, z) => { $('dw').textContent = formatLength(x); $('dh').textContent = formatLength(y); $('dd').textContent = formatLength(z); };
+      if (model.row?.width_m) setDims(model.row.width_m, model.row.height_m, model.row.depth_m);
+      mv.addEventListener('load', () => { const d = mv.getDimensions(); setDims(d.x, d.y, d.z); });
+
+      const pageUrl = siteUrl('view.html?m=' + encodeURIComponent(model.id));
+      new QRCode($('qr'), { text: pageUrl, width: 112, height: 112, colorDark: '#414042', colorLight: '#FFFFFF' });
+
+      // One primary button: AR where the device supports it, otherwise point to the QR code.
+      const arBtn = $('ar-btn');
+      const canAR = () => mv.canActivateAR;
+      function setupAR() {
+        if (canAR()) {
+          arBtn.innerHTML = icons.ar + t('ar.place');
+          $('ar-note').innerHTML = t('view.arNote');
+          $('qr-box').classList.add('on-phone');
+          $('stage-ar').innerHTML = icons.ar + '<bdi>AR</bdi>';
+          $('stage-ar').setAttribute('aria-label', arBtn.textContent);
+          $('stage-ar').hidden = false;
+        } else {
+          arBtn.innerHTML = icons.ar + t('view.openOnPhone');
+          $('ar-note').innerHTML = t('view.noARShort');
+        }
+      }
+      setupAR();
+      mv.addEventListener('load', setupAR, { once: true });
+      arBtn.addEventListener('click', () => {
+        if (canAR()) return mv.activateAR();
+        const box = $('qr-box');
+        box.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
+      });
+
+      $('stage-ar').addEventListener('click', () => mv.activateAR());
+      $('fixed').addEventListener('change', (e) => mv.setAttribute('ar-scale', e.target.checked ? 'fixed' : 'auto'));
+
+      const vr = $('vr-btn');
       vr.href = 'vr.html?m=' + encodeURIComponent(model.id);
       vr.innerHTML = icons.vr + t('vr.enter');
-      const share = document.getElementById('share-btn');
+      const share = $('share-btn');
       share.innerHTML = icons.share + t('share.btn');
-      const pageUrl = siteUrl('view.html?m=' + encodeURIComponent(model.id));
       share.addEventListener('click', () => shareLink(model.title, pageUrl));
 
-      new QRCode(document.getElementById('qr'), { text: pageUrl, width: 112, height: 112, colorDark: '#414042', colorLight: '#FFFFFF' });
-
-      document.getElementById('fixed').addEventListener('change', (e) => {
-        mv.setAttribute('ar-scale', e.target.checked ? 'fixed' : 'auto');
-      });
-
-      mv.addEventListener('load', () => {
-        const d = mv.getDimensions();
-        document.getElementById('dw').textContent = formatLength(d.x);
-        document.getElementById('dh').textContent = formatLength(d.y);
-        document.getElementById('dd').textContent = formatLength(d.z);
-        if (!mv.canActivateAR) {
-          const hint = document.getElementById('ar-hint');
-          hint.innerHTML = icons.info + '<div>' + t('view.noAR') + '</div>';
-          hint.hidden = false;
-        }
-      });
+      mv.addEventListener('camera-change', (e) => { if (e.detail.source === 'user-interaction') $('stage-hint').classList.add('is-hidden'); });
       mv.addEventListener('error', () => {
         app.querySelector('.stage').insertAdjacentHTML('beforeend', '<div class="notice" style="position:absolute;inset:16px;background:var(--color-bg)">' + icons.info + '<div>' + t('view.loadError') + ' <bdi>' + esc(model.src) + '</bdi></div></div>');
       });
+
+      // Other models, to keep visitors exploring.
+      loadCatalog().then((all) => {
+        const others = all.filter((m) => m.id !== model.id).slice(0, 3);
+        if (!others.length) return;
+        $('more-grid').innerHTML = others.map((m) => `
+          <a class="card" href="view.html?m=${encodeURIComponent(m.id)}">
+            <span class="thumb">${m.poster ? `<img src="${esc(m.poster)}" alt="" loading="lazy">` : ''}
+              <span class="badge">${icons.ar}<bdi>AR</bdi> · <bdi>VR</bdi></span></span>
+            <span class="body"><h3 dir="auto">${esc(m.title)}</h3>
+              ${m.row?.height_m ? `<span class="meta">${t('dim.h')}: ${formatLength(m.row.height_m)}</span>` : ''}</span>
+          </a>`).join('');
+        $('more-all').innerHTML = t('view.allModels') + ' ' + fwd;
+        $('more').hidden = false;
+      }).catch(() => {});
     }
   </script>
 </body>
