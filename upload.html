@@ -136,7 +136,10 @@
     mv.addEventListener('error', () => { if ($('glb').files[0]) error('تعذّر قراءة الملف. تأكد أنه GLB سليم.'); });
 
     async function put(path, body, contentType) {
-      const { error: e } = await sb.storage.from(BUCKET).upload(path, body, { contentType, upsert: false });
+      // Browsers give .glb/.usdz files an empty type, and supabase-js sends a File's own type
+      // (falling back to application/octet-stream), so re-wrap it with the real one.
+      const typed = new Blob([body], { type: contentType });
+      const { error: e } = await sb.storage.from(BUCKET).upload(path, typed, { contentType, upsert: false });
       if (e) throw e;
       return path;
     }
