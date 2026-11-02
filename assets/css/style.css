@@ -46,6 +46,7 @@ a { color: var(--color-link); text-underline-offset: 3px; }
 :focus-visible { outline: 2px solid var(--focus-outer); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus-inner); }
 img, svg { max-inline-size: 100%; }
 bdi { unicode-bidi: isolate; }
+[hidden] { display: none !important; }
 
 /* Header */
 .site-header {
